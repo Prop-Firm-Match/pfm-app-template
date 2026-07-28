@@ -1,0 +1,12 @@
+// data_source=bigquery — no existing propfirm precedent for this; net-new
+// adapter. Service-account credentials come from a GitHub Secret at CI-time
+// (if needed for tests) and from a Cloudflare-dashboard-configured secret at
+// deploy-time (see README "Secrets" section).
+import { BigQuery } from '@google-cloud/bigquery';
+
+export function getBigQueryClient() {
+  return new BigQuery({
+    projectId: process.env.BIGQUERY_PROJECT_ID,
+    credentials: JSON.parse(process.env.BIGQUERY_SERVICE_ACCOUNT_JSON ?? '{}'),
+  });
+}

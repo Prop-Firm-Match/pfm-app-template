@@ -1,0 +1,26 @@
+import { createClerkClient, verifyToken } from '@clerk/backend';
+
+import type { Identity } from '../../server/trpc';
+
+interface Env {
+  CLERK_SECRET_KEY?: string;
+}
+
+export async function verifyIdentity(request: Request, env?: Env): Promise<Identity | null> {
+  const header = request.headers.get('Authorization');
+  const token = header?.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!token) return null;
+
+  const secretKey = env?.CLERK_SECRET_KEY ?? process.env.CLERK_SECRET_KEY;
+  if (!secretKey) return null;
+
+  try {
+    const { sub: userId } = await verifyToken(token, { secretKey });
+    const clerk = createClerkClient({ secretKey });
+    const user = await clerk.users.getUser(userId);
+    const email = user.primaryEmailAddress?.emailAddress;
+    return email ? { email } : null;
+  } catch {
+    return null;
+  }
+}

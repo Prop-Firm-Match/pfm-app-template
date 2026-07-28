@@ -1,0 +1,46 @@
+import { lazy, Suspense } from 'react';
+import { Button } from './components/ui/button';
+import { Nav } from './components/nav';
+import { AuthGate } from '../lib/auth/AuthGate';
+import { TRPCProvider } from './lib/trpc-provider';
+
+// recharts alone is ~370kB of this ~690kB bundle -- lazy-loading the one
+// place it's used keeps the main chunk under Vite's 500kB warning threshold
+// and means apps that never render a chart don't pay for it at all.
+const ExampleChart = lazy(() =>
+  import('./components/example-chart').then((m) => ({ default: m.ExampleChart })),
+);
+
+function AppContent() {
+  return (
+    <>
+      <Nav appName="{{ project_name }}" />
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+        <h1 className="font-sans text-2xl font-semibold text-foreground">{{ project_name }}</h1>
+        <p className="text-foreground-secondary">
+          On-brand Prop Firm Match internal tool, generated from pfm-app-template.
+        </p>
+        <Button variant="pfmGradient" rounded="full">
+          Primary Action
+        </Button>
+        <div className="w-full max-w-lg">
+          <Suspense fallback={null}>
+            <ExampleChart />
+          </Suspense>
+        </div>
+      </div>
+    </>
+  );
+}
+
+export function App() {
+  return (
+    <TRPCProvider>
+      <AuthGate>
+        <div className="flex min-h-screen flex-col">
+          <AppContent />
+        </div>
+      </AuthGate>
+    </TRPCProvider>
+  );
+}

@@ -1,0 +1,33 @@
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+
+import type { Identity } from '../../server/trpc';
+
+interface Env {
+  GOOGLE_OAUTH_CLIENT_ID?: string;
+  GOOGLE_WORKSPACE_DOMAIN?: string;
+}
+
+let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+export async function verifyIdentity(request: Request, env?: Env): Promise<Identity | null> {
+  const header = request.headers.get('Authorization');
+  const idToken = header?.startsWith('Bearer ') ? header.slice(7) : null;
+  if (!idToken) return null;
+
+  const clientId = env?.GOOGLE_OAUTH_CLIENT_ID ?? process.env.GOOGLE_OAUTH_CLIENT_ID;
+  const workspaceDomain = env?.GOOGLE_WORKSPACE_DOMAIN ?? process.env.GOOGLE_WORKSPACE_DOMAIN;
+  if (!clientId || !workspaceDomain) return null;
+
+  jwks ??= createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));
+
+  try {
+    const { payload } = await jwtVerify(idToken, jwks, {
+      issuer: ['https://accounts.google.com', 'accounts.google.com'],
+      audience: clientId,
+    });
+    if (typeof payload.email !== 'string' || payload.hd !== workspaceDomain) return null;
+    return { email: payload.email };
+  } catch {
+    return null;
+  }
+}

@@ -1,0 +1,25 @@
+import type { Meta, StoryObj } from '@storybook/react-vite';
+import { Card } from './card';
+import { Button } from './button';
+
+const meta: Meta<typeof Card> = {
+  title: 'Design System/Card',
+  component: Card,
+};
+export default meta;
+
+type Story = StoryObj<typeof Card>;
+
+export const Default: Story = {
+  render: () => (
+    <Card className="w-80 p-6">
+      <h3 className="font-sans text-lg font-semibold text-foreground">Refund Request</h3>
+      <p className="mt-2 text-sm text-foreground-secondary">
+        Order #4821 · $128.00 · Pending review
+      </p>
+      <Button variant="pfmGradient" size="sm" className="mt-4">
+        Approve
+      </Button>
+    </Card>
+  ),
+};

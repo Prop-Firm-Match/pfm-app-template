@@ -1,0 +1,52 @@
+import { protectedProcedure, publicProcedure, router } from './trpc';
+{%- if data_source == "external-api-only" %}
+import { z } from 'zod';
+{%- endif %}
+{%- if data_source == "postgres" %}
+import { getDb } from '../lib/db/client';
+import { examples } from '../lib/db/schema';
+{%- elif data_source == "bigquery" %}
+import { getBigQueryClient } from '../lib/data/bigquery-client';
+{%- elif data_source == "google-sheets" %}
+import { getSheetsClient } from '../lib/data/sheets-client';
+{%- endif %}
+
+export const appRouter = router({
+  health: publicProcedure.query(() => ({ status: 'ok' as const })),
+
+{%- if auth == "cloudflare-access" %}
+  whoami: publicProcedure.query(({ ctx }) => ctx.identity),
+{%- endif %}
+
+{%- if data_source == "postgres" %}
+  // Example: list rows from the `examples` table (lib/db/schema.ts). Replace
+  // with your app's real tables once you've defined them.
+  listExamples: protectedProcedure.query(async () => {
+    const db = getDb();
+    return db.select().from(examples).limit(20);
+  }),
+{%- elif data_source == "bigquery" %}
+  // Stub — fill in your project's dataset/table. No real schema is known at
+  // generation time (see the template's known-gaps notes).
+  listExamples: protectedProcedure.query(async () => {
+    const client = getBigQueryClient();
+    void client; // remove once you wire a real query
+    return [] as Array<{ id: string }>;
+  }),
+{%- elif data_source == "google-sheets" %}
+  // Stub — fill in your spreadsheet ID/range. No real schema is known at
+  // generation time (see the template's known-gaps notes).
+  listExamples: protectedProcedure.query(async () => {
+    const client = await getSheetsClient();
+    void client; // remove once you wire a real query
+    return [] as Array<{ id: string }>;
+  }),
+{%- else %}
+  // external-api-only — proxy or call your existing internal API here.
+  // Example shape kept minimal since the API's actual contract isn't known
+  // at generation time.
+  echo: protectedProcedure.input(z.object({ message: z.string() })).query(({ input }) => input),
+{%- endif %}
+});
+
+export type AppRouter = typeof appRouter;

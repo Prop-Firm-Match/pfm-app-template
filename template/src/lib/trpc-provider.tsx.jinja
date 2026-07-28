@@ -1,0 +1,39 @@
+import { useState } from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { httpBatchLink } from '@trpc/client';
+import superjson from 'superjson';
+
+import { trpc } from './trpc';
+{%- if auth == "clerk" or auth == "google-oauth" %}
+import { getAuthToken } from '../../lib/auth/token-store';
+{%- endif %}
+
+// Same-origin: this app's tRPC endpoint runs in the same Worker as the
+// frontend (see server/router.ts + server/worker.ts).
+const TRPC_URL = '/trpc';
+
+export function TRPCProvider({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    trpc.createClient({
+      links: [
+        httpBatchLink({
+          url: TRPC_URL,
+          transformer: superjson,
+{%- if auth == "clerk" or auth == "google-oauth" %}
+          async headers() {
+            const token = await getAuthToken();
+            return token ? { Authorization: `Bearer ${token}` } : {};
+          },
+{%- endif %}
+        }),
+      ],
+    }),
+  );
+
+  return (
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </trpc.Provider>
+  );
+}

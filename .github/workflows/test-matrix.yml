@@ -1,0 +1,20 @@
+name: Template matrix test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - run: pip install copier
+
+      - run: bash scripts/test-matrix.sh

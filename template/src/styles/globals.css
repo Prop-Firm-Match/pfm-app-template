@@ -1,0 +1,85 @@
+/*
+  Prop Firm Match design tokens — vendored subset of propfirm's
+  packages/tailwind/styles.css (.dark block), flattened to a single
+  dark theme since PFM is dark-by-default and this is an internal-tool
+  template (no light mode, no seasonal/campaign overrides).
+
+  This file is managed by the template. If you edit it locally, a
+  future `copier update` may conflict with your changes — that's
+  expected and is how brand-token updates propagate.
+*/
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 330 6.7% 5.9%;
+  --background-primary: 330 5% 7.8%;
+  --background-secondary: 330 4% 9.8%;
+  --background-tertiary: 340 4.2% 13.9%;
+
+  --foreground: 0 0% 100%;
+  --foreground-secondary: 340 2% 76%;
+  --foreground-tertiary: 330 2% 53%;
+  --foreground-disabled: 330 3.9% 29.8%;
+
+  --border: 340 3.3% 17.8%;
+  --border-secondary: 340 4.2% 13.9%;
+
+  --primary: 331.3 53.3% 17.6%;
+  --primary-theme: 330.9 77% 59%;
+  --primary-theme-foreground: 0 0% 100%;
+  --primary-hover: 330.9 53.6% 35.5%;
+  --primary-focus: 330.9 53.3% 23.5%;
+  --primary-foreground: 330.9 77.6% 75.5%;
+
+  --dark: 340 3.3% 17.8%;
+  --dark-hover: 330 4% 9.8%;
+  --dark-focus: 340 4.2% 13.9%;
+  --dark-disabled: 330 4% 9.8%;
+
+  --green: 166.3 97.2% 14.1%;
+  --green-theme: 157.6 60% 48%;
+  --green-foreground: 157.6 60% 48%;
+  --green-hover: 161 92.1% 24.9%;
+  --green-focus: 164.4 93.1% 17.1%;
+
+  --red: 0 60.8% 29%;
+  --red-theme: 0 75.2% 51%;
+  --red-foreground: 0 82.9% 83.9%;
+  --red-hover: 0 75.2% 51%;
+  --red-focus: 0 69.4% 35.9%;
+
+  --yellow: 23 69.2% 22.9%;
+  --yellow-foreground: 47.4 95.8% 53.1%;
+
+  --purple: 262.3 67.6% 35.1%;
+  --purple-theme: 259 93% 68%;
+  --purple-hover: 262.4 69.6% 51%;
+  --purple-foreground: 250.6 93.9% 87.1%;
+
+  --blue: 224.8 54.2% 30%;
+  --blue-theme: 217.9 93% 61%;
+  --blue-foreground: 216.8 93% 72.2%;
+
+  --card: var(--background-primary);
+  --card-foreground: var(--foreground);
+  --popover: var(--background-secondary);
+  --popover-foreground: var(--foreground);
+  --muted: var(--background-secondary);
+  --muted-foreground: var(--foreground-secondary);
+  --accent: var(--background);
+  --accent-foreground: var(--foreground);
+  --input: var(--border);
+  --ring: 240 4.9% 83.9%;
+
+  --radius: 0.75rem;
+
+  /* Brand gradient — pink -> purple, primary CTA / brand mark */
+  --pfm-gradient: linear-gradient(90deg, hsl(330.9 77% 59%), hsl(259 93% 68%));
+}
+
+body {
+  @apply bg-background text-foreground font-sans antialiased;
+}

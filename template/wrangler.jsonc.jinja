@@ -1,0 +1,22 @@
+{
+  // vite flavor — static SPA + assets on Cloudflare Workers.
+  // Deploy is via Cloudflare Workers Builds (CF dashboard Git integration),
+  // NOT a custom GitHub Actions deploy workflow. When connecting this repo
+  // in the CF dashboard, set the deploy command to:
+  //   pnpm dlx wrangler deploy --keep-vars
+  // --keep-vars is required: env vars/secrets for this worker are set
+  // directly in the CF dashboard (see README "Secrets"), and a plain
+  // `wrangler deploy` would otherwise wipe them on every deploy.
+  "name": "{{ project_name }}",
+  "main": "./server/worker.ts",
+  "compatibility_date": "2026-07-07",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+  },
+  "routes": [{ "pattern": "{{ project_name }}.propfirmmatch.solutions", "custom_domain": true }],
+{%- if data_source == "postgres" %}
+  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "REPLACE_WITH_HYPERDRIVE_ID" }],
+{%- endif %}
+}

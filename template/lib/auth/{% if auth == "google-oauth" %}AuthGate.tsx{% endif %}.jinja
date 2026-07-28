@@ -1,0 +1,86 @@
+// auth=google-oauth -- no propfirm precedent for this (net-new pattern).
+// Loads Google Identity Services client-side. The `hd` check here is only a
+// UI-level early-exit -- the raw credential is also handed to token-store so
+// server/protectedProcedure calls can verify it for real (see
+// lib/auth/verify-identity).
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+
+import { setTokenGetter } from './token-store';
+
+const clientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string;
+const allowedDomain = import.meta.env.VITE_GOOGLE_WORKSPACE_DOMAIN as string;
+
+interface GoogleIdentity {
+  email: string;
+  hd: string;
+}
+
+const IdentityContext = createContext<GoogleIdentity | null>(null);
+
+export function useAuthIdentity() {
+  const identity = useContext(IdentityContext);
+  return { email: identity?.email ?? null };
+}
+
+declare global {
+  interface Window {
+    google?: {
+      accounts: {
+        id: {
+          initialize: (config: {
+            client_id: string;
+            callback: (response: { credential: string }) => void;
+          }) => void;
+          renderButton: (element: HTMLElement, options: { theme: string }) => void;
+        };
+      };
+    };
+  }
+}
+
+export function AuthGate({ children }: { children: ReactNode }) {
+  const [identity, setIdentity] = useState<GoogleIdentity | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.onload = () => {
+      window.google?.accounts.id.initialize({
+        client_id: clientId,
+        callback: (response) => {
+          const payload = response.credential.split('.')[1];
+          if (!payload) return;
+          const decoded = JSON.parse(atob(payload)) as GoogleIdentity;
+          if (decoded.hd !== allowedDomain) {
+            setError(`${decoded.email} is not in ${allowedDomain}`);
+            return;
+          }
+          setTokenGetter(() => Promise.resolve(response.credential));
+          setIdentity(decoded);
+          setError(null);
+        },
+      });
+      const buttonEl = document.getElementById('google-signin-button');
+      if (buttonEl) {
+        window.google?.accounts.id.renderButton(buttonEl, { theme: 'filled_black' });
+      }
+    };
+    document.body.appendChild(script);
+    return () => {
+      document.body.removeChild(script);
+    };
+  }, []);
+
+  if (identity) {
+    return <IdentityContext.Provider value={identity}>{children}</IdentityContext.Provider>;
+  }
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+      <div id="google-signin-button" />
+      {error && <p className="text-sm text-red-theme">{error}</p>}
+    </div>
+  );
+}

@@ -1,0 +1,14 @@
+import type { StorybookConfig } from '@storybook/react-vite';
+
+const config: StorybookConfig = {
+  // Storybook 10 folds the former "essentials" addons (controls, actions,
+  // viewport, etc.) into core -- no separate @storybook/addon-essentials
+  // package needed anymore.
+  stories: ['../src/components/ui/**/*.stories.tsx'],
+  framework: {
+    name: '@storybook/react-vite',
+    options: {},
+  },
+};
+
+export default config;

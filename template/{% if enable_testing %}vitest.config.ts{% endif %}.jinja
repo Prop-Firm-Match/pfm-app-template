@@ -1,0 +1,17 @@
+import { defineConfig } from 'vite-plus';
+
+export default defineConfig({
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./vitest.setup.ts'],
+    {%- if auth == "clerk" %}
+    // ClerkProvider throws hard if publishableKey is missing/empty -- this
+    // is a syntactically-valid but fake test key (decodes to
+    // "clerk.test.example$"), just enough for the provider to mount in
+    // tests. Real apps get the real key from .env/CF dashboard.
+    env: {
+      VITE_CLERK_PUBLISHABLE_KEY: 'pk_test_Y2xlcmsudGVzdC5leGFtcGxlJA==',
+    },
+    {%- endif %}
+  },
+});

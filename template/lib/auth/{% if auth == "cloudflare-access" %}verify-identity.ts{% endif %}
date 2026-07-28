@@ -1,0 +1,33 @@
+import { createRemoteJWKSet, jwtVerify } from 'jose';
+
+import type { Identity } from '../../server/trpc';
+
+interface Env {
+  CF_ACCESS_TEAM_DOMAIN?: string;
+  CF_ACCESS_AUD?: string;
+}
+
+let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+export async function verifyIdentity(request: Request, env?: Env): Promise<Identity | null> {
+  const assertion = request.headers.get('Cf-Access-Jwt-Assertion');
+  if (!assertion) return null;
+
+  const teamDomain = env?.CF_ACCESS_TEAM_DOMAIN ?? process.env.CF_ACCESS_TEAM_DOMAIN;
+  const aud = env?.CF_ACCESS_AUD ?? process.env.CF_ACCESS_AUD;
+  if (!teamDomain || !aud) return null;
+
+  jwks ??= createRemoteJWKSet(
+    new URL(`https://${teamDomain}.cloudflareaccess.com/cdn-cgi/access/certs`),
+  );
+
+  try {
+    const { payload } = await jwtVerify(assertion, jwks, {
+      issuer: `https://${teamDomain}.cloudflareaccess.com`,
+      audience: aud,
+    });
+    return typeof payload.email === 'string' ? { email: payload.email } : null;
+  } catch {
+    return null;
+  }
+}

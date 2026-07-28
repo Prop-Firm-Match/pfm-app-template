@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known fake fixtures baked into this template, not real secrets"
+regexes = ['''pk_test_Y2xlcmsudGVzdC5leGFtcGxlJA==''']

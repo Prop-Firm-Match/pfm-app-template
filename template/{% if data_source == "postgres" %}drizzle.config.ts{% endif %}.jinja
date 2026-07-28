@@ -1,0 +1,16 @@
+// data_source=postgres — mirrors propfirm's packages/pfm-db/drizzle.config.ts.
+// Runs through Cloudflare Hyperdrive in production; falls back to a local
+// Postgres connection string for local dev.
+import { defineConfig } from 'drizzle-kit';
+
+export default defineConfig({
+  dialect: 'postgresql',
+  schema: './lib/db/schema.ts',
+  out: './drizzle',
+  dbCredentials: {
+    url:
+      process.env.DATABASE_CONNECTION_STRING ??
+      process.env.CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE ??
+      'postgres://postgres:postgres@localhost:5432/{{ project_name | replace("-", "_") }}',
+  },
+});

@@ -1,0 +1,85 @@
+# {{ project_name }}
+
+Generated from [pfm-app-template](https://github.com/Prop-Firm-Match/pfm-app-template).
+Owner: **{{ owner }}** · Data source: **{{ data_source }}** · Auth: **{{ auth }}**
+
+## Deploy
+
+Deploy is via **Cloudflare Workers Builds** (CF dashboard → Workers & Pages →
+Connect to Git → select this repo), not a GitHub Actions deploy job.
+
+1. Connect this repo in the Cloudflare dashboard.
+2. Set the deploy command to:
+   ```
+   pnpm dlx wrangler deploy --keep-vars
+   ```
+   `--keep-vars` is required — env vars/secrets below are set in the CF
+   dashboard, and a plain deploy would wipe them on every push.
+3. Set the vars/secrets listed below in the CF dashboard for this Worker.
+4. Route: `{{ project_name }}.propfirmmatch.solutions`.
+
+## Secrets
+
+**GitHub Secrets** (CI-scope only — used by `.github/workflows/ci.yml` for lint/test):
+
+| Secret | Needed when |
+|---|---|
+{%- if enable_testing and data_source == "postgres" %}
+| `TEST_DATABASE_URL` | Running DB-touching tests |
+{%- endif %}
+{%- if not (enable_testing and data_source == "postgres") %}
+| _(none required by default)_ | |
+{%- endif %}
+
+**Cloudflare dashboard vars/secrets** (deploy-scope — set when connecting the repo):
+
+| Var/Secret | Needed when |
+|---|---|
+{%- if data_source == "postgres" %}
+| `HYPERDRIVE` binding | data_source=postgres |
+{%- endif %}
+{%- if data_source == "bigquery" %}
+| `BIGQUERY_PROJECT_ID`, `BIGQUERY_SERVICE_ACCOUNT_JSON` | data_source=bigquery |
+{%- endif %}
+{%- if data_source == "google-sheets" %}
+| `GOOGLE_SHEETS_CLIENT_EMAIL`, `GOOGLE_SHEETS_PRIVATE_KEY` | data_source=google-sheets |
+{%- endif %}
+{%- if auth == "clerk" %}
+| `CLERK_PUBLISHABLE_KEY` (var), `CLERK_SECRET_KEY` (secret) | auth=clerk |
+{%- endif %}
+{%- if auth == "google-oauth" %}
+| `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `GOOGLE_WORKSPACE_DOMAIN` | auth=google-oauth |
+{%- endif %}
+{%- if auth == "cloudflare-access" %}
+| `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD` (vars) | auth=cloudflare-access — also configure the Access policy itself in Zero Trust |
+{%- endif %}
+{%- if enable_file_storage %}
+| `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | enable_file_storage=true |
+{%- endif %}
+
+## Local development
+
+```sh
+cp .env.example .env
+{%- if data_source == "postgres" %}
+docker compose up -d      # local Postgres, matches DATABASE_CONNECTION_STRING
+{%- endif %}
+pnpm install
+pnpm dev
+```
+
+`pnpm dev` runs the frontend and the tRPC API (`server/router.ts`) together
+in one process via `@cloudflare/vite-plugin` — no separate `wrangler dev`
+needed.
+
+## Design system
+
+`src/components/ui/`, `src/lib/utils.ts`, and `src/styles/globals.css` are
+vendored from Prop Firm Match's shared Tailwind tokens + `packages/ui`
+(trimmed). Local edits here may conflict on the next `copier update` —
+that's expected; it's how brand-token updates propagate.
+
+## Known gap
+
+No error-tracking integration is included (PostHog was dropped from this
+template's stack; no Sentry equivalent added). Accepted for now.

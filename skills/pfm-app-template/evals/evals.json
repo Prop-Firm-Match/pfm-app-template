@@ -1,0 +1,47 @@
+{
+  "skill_name": "pfm-app-template",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Make me a new app from pfm-app-template called loyalty-ops-tool. It's a simple internal dashboard, vite, connects to our existing internal API (no own database), and should just be gated by Cloudflare Access.",
+      "expected_output": "A new git repo at ./loyalty-ops-tool generated via `copier copy` with framework=vite, data_source=external-api-only, auth=cloudflare-access, initialized and committed. Agent reports the choices made and points to deploy being engineering's job.",
+      "files": [],
+      "assertions": [
+        "generated_repo_exists",
+        "correct_framework_vite",
+        "correct_data_source_external_api_only",
+        "correct_auth_cloudflare_access",
+        "git_initialized_and_committed",
+        "used_correct_template_source",
+        "mentions_deploy_is_engineerings_job"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "hey can you spin up a small internal tool for tracking refund requests? it'll read/write to our postgres db directly. call it refund-tracker",
+      "expected_output": "A new git repo at ./refund-tracker generated via `copier copy` with data_source=postgres explicit from the request, and framework/auth inferred as the vite/cloudflare-access defaults since nothing in the request implies otherwise. Agent doesn't over-interrogate the user for the two unstated answers.",
+      "files": [],
+      "assertions": [
+        "generated_repo_exists",
+        "correct_data_source_postgres",
+        "inferred_framework_vite_default",
+        "inferred_auth_cloudflare_access_default",
+        "git_initialized_and_committed",
+        "did_not_over_ask_for_unstated_defaults"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Can you update this app's design from pfm-app-template? I think the brand colors changed.",
+      "expected_output": "Agent runs `git status` first, confirms clean tree, runs `copier update`, then shows the user the actual `git diff` output before committing anything — does not commit without the user seeing the diff first.",
+      "files": ["fixture: a repo previously generated from pfm-app-template, with a subsequent template-side design-token change to pull in"],
+      "assertions": [
+        "checked_git_status_before_update",
+        "ran_copier_update",
+        "diff_captured_and_shown_before_commit",
+        "final_response_describes_actual_change",
+        "no_commit_without_diff_shown_first"
+      ]
+    }
+  ]
+}

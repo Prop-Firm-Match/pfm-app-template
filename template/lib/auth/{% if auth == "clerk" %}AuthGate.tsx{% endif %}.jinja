@@ -1,0 +1,40 @@
+import { useEffect, type ReactNode } from 'react';
+import {
+  ClerkProvider,
+  RedirectToSignIn,
+  SignedIn,
+  SignedOut,
+  useAuth,
+  useUser,
+} from '@clerk/clerk-react';
+
+import { setTokenGetter } from './token-store';
+
+const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
+
+function TokenBridge() {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    setTokenGetter(() => getToken());
+  }, [getToken]);
+  return null;
+}
+
+export function AuthGate({ children }: { children: ReactNode }) {
+  return (
+    <ClerkProvider publishableKey={publishableKey}>
+      <SignedIn>
+        <TokenBridge />
+        {children}
+      </SignedIn>
+      <SignedOut>
+        <RedirectToSignIn />
+      </SignedOut>
+    </ClerkProvider>
+  );
+}
+
+export function useAuthIdentity() {
+  const { user } = useUser();
+  return { email: user?.primaryEmailAddress?.emailAddress ?? null };
+}

@@ -1,0 +1,58 @@
+_subdirectory: template
+_envops:
+  keep_trailing_newline: true
+
+project_name:
+  type: str
+  help: "Repo/app name (kebab-case), used as the CF Workers deploy name and *.propfirmmatch.solutions subdomain"
+  validator: >-
+    {% if not (project_name | regex_search('^[a-z][a-z0-9-]*$')) %}
+    project_name must be lowercase kebab-case (e.g. loyalty-ops-tool)
+    {% endif %}
+
+owner:
+  type: str
+  help: "Human owner's email — the person accountable for this app (not a bot/service account). Lands in CLAUDE.md/README.md and CODEOWNERS."
+  validator: >-
+    {% if not (owner | regex_search('^[^@\s]+@[^@\s]+\.[^@\s]+$')) %}
+    owner must be a real email address (e.g. name@propfirmmatch.com)
+    {% endif %}
+
+data_source:
+  type: str
+  help: "Where does this app's data come from?"
+  choices:
+    postgres: postgres
+    bigquery: bigquery
+    google-sheets: google-sheets
+    "external-api-only (no owned datastore)": external-api-only
+  default: external-api-only
+
+auth:
+  type: str
+  help: "How do users sign in? cloudflare-access = zero app code, gate the route in the CF dashboard (simplest, recommended default for internal tools)."
+  choices:
+    clerk: clerk
+    google-oauth: google-oauth
+    cloudflare-access: cloudflare-access
+  default: cloudflare-access
+
+enable_i18n:
+  type: bool
+  help: "Add react-i18next scaffolding?"
+  default: false
+
+enable_testing:
+  type: bool
+  help: "Add Vitest unit-test scaffolding?"
+  default: true
+
+enable_file_storage:
+  type: bool
+  help: "Add R2 file-upload scaffolding?"
+  default: false
+
+enable_storybook:
+  type: bool
+  help: "Add Storybook for previewing/developing the design-system components (Button, Card)?"
+  default: false

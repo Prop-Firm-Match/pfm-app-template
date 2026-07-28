@@ -1,0 +1,8 @@
+// data_source=postgres — Drizzle schema, mirrors propfirm's packages/pfm-db pattern.
+import { pgTable, serial, text, timestamp } from 'drizzle-orm/pg-core';
+
+export const examples = pgTable('examples', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});

@@ -1,0 +1,19 @@
+# data_source=postgres -- local Postgres for `pnpm dev`, matching the
+# DATABASE_CONNECTION_STRING default in .env.example / lib/db/client.ts.
+# Not used in production: Cloudflare Hyperdrive (wrangler.jsonc) proxies to
+# the real AWS-hosted Postgres there.
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: {{ project_name | replace("-", "_") }}
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

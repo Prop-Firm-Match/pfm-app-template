@@ -1,0 +1,63 @@
+# {{ project_name }} — agent instructions
+
+Generated from [pfm-app-template](https://github.com/Prop-Firm-Match/pfm-app-template)
+(`copier copy`, not a one-shot scaffold — this repo can pull template
+updates later via `copier update`). Read `README.md` for deploy/secrets
+specifics; this file is the working rules for whoever (human or agent)
+touches this codebase day to day.
+
+## This app's shape
+
+- Owner: **{{ owner }}** (see `CODEOWNERS`)
+- Framework: **vite** (all generated apps are vite -- no other flavor)
+- Data source: **{{ data_source }}**
+- Auth: **{{ auth }}**
+{%- if enable_i18n %}
+- i18n: enabled
+{%- endif %}
+{%- if enable_testing %}
+- Testing: Vitest
+{%- endif %}
+{%- if enable_file_storage %}
+- File storage: R2 (`lib/r2-client.ts`)
+{%- endif %}
+
+Deploys as a Cloudflare Worker at `{{ project_name }}.propfirmmatch.solutions`
+via Cloudflare Workers Builds (CF dashboard Git integration) — not a GitHub
+Actions deploy job. See `README.md` → Deploy.
+
+## Rules
+
+1. **`src/components/ui/`, `src/lib/utils.ts`, and `src/styles/globals.css`
+   are template-managed.** Vendored from the shared Prop Firm Match brand
+   tokens/components. Don't restyle inside them for a one-off need — add
+   app-specific components elsewhere and compose with `Button`/`Card` from
+   `src/components/ui/`. Editing these files directly will conflict the
+   next time this repo runs `copier update`.
+2. **To change a brand token or shared component for real**, the fix
+   belongs in `pfm-app-template`, not here. Make the change there, then run
+   `copier update` in this repo to pull it in as a reviewable diff — see
+   below.
+3. **Never hand-edit `.copier-answers.yml`**, except `_src_path` (if it ever
+   needs pointing at a different remote/path) or `_commit` (only if
+   `copier update` fails because the template's history was squashed/
+   rewritten and the recorded commit no longer exists — see
+   pfm-app-template's `MAINTAINING.md` Troubleshooting section) —
+   everything else is copier's own record of the answers above and editing
+   it breaks `copier update`.
+4. Secrets: GitHub Secrets are CI-scope only (lint/test). Deploy-time
+   secrets live in the Cloudflare dashboard (see `README.md` → Secrets) —
+   don't add deploy credentials to GitHub Actions for this app.
+
+## Pulling a template update
+
+```sh
+git status              # must be clean — copier refuses otherwise
+copier update --vcs-ref=HEAD --defaults
+git diff                 # review before committing — this diff is the point
+```
+
+Show the user that diff and wait for their go-ahead — do not run
+`git add -A && git commit` until they've actually approved it. This is not
+optional: the whole reason this repo supports `copier update` instead of a
+one-shot regenerate is so a human reviews what changed before it lands.

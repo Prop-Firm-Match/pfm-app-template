@@ -1,0 +1,22 @@
+// data_source=postgres — Drizzle client over node-postgres, matching the
+// Cloudflare Hyperdrive pattern (Hyperdrive proxies TCP, node-postgres talks
+// to it like a normal Postgres connection). Falls back to a local connection
+// string for `pnpm dev` outside a Worker.
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+
+import * as schema from './schema';
+
+interface HyperdriveEnv {
+  HYPERDRIVE?: { connectionString: string };
+}
+
+export function getDb(env?: HyperdriveEnv) {
+  const connectionString =
+    env?.HYPERDRIVE?.connectionString ??
+    process.env.DATABASE_CONNECTION_STRING ??
+    'postgres://postgres:postgres@localhost:5432/app';
+
+  const pool = new Pool({ connectionString });
+  return drizzle(pool, { schema });
+}

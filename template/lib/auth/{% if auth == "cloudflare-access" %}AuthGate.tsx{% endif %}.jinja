@@ -1,0 +1,19 @@
+import type { ReactNode } from 'react';
+
+import { trpc } from '../../src/lib/trpc';
+
+export function useAuthIdentity() {
+  const { data } = trpc.whoami.useQuery();
+  return { email: data?.email ?? null };
+}
+
+export function AuthGate({ children }: { children: ReactNode }) {
+  // Cloudflare Access already gates this route at the edge (Zero Trust
+  // policy configured in the CF dashboard for
+  // {{ project_name }}.propfirmmatch.solutions) -- nothing to check
+  // client-side here. useAuthIdentity() above surfaces who Access says is
+  // signed in, via the `whoami` tRPC procedure (server/router.ts), since
+  // the identity JWT only arrives on the server-side request, not in the
+  // browser.
+  return <>{children}</>;
+}
