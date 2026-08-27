@@ -1,6 +1,7 @@
 // data_source=postgres — mirrors propfirm's packages/pfm-db/drizzle.config.ts.
-// Runs through Cloudflare Hyperdrive in production; falls back to a local
-// Postgres connection string for local dev.
+// drizzle-kit is a Node CLI, not a Worker -- it has no access to the
+// HYPERDRIVE binding lib/db/client.ts uses at runtime, so it needs its own
+// connection string here.
 import { defineConfig } from 'drizzle-kit';
 
 export default defineConfig({
@@ -10,7 +11,6 @@ export default defineConfig({
   dbCredentials: {
     url:
       process.env.DATABASE_CONNECTION_STRING ??
-      process.env.CLOUDFLARE_HYPERDRIVE_LOCAL_CONNECTION_STRING_HYPERDRIVE ??
       'postgres://postgres:postgres@localhost:5432/{{ project_name | replace("-", "_") }}',
   },
 });

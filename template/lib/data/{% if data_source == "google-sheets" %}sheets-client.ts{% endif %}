@@ -69,9 +69,17 @@ export interface SheetsClient {
   batchGet(spreadsheetId: string, ranges: string[]): Promise<string[][][]>;
 }
 
-export async function getSheetsClient(): Promise<SheetsClient> {
-  const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL ?? '';
-  const privateKey = (process.env.GOOGLE_SHEETS_PRIVATE_KEY ?? '').replace(/\\n/g, '\n');
+interface Env {
+  GOOGLE_SHEETS_CLIENT_EMAIL?: string;
+  GOOGLE_SHEETS_PRIVATE_KEY?: string;
+}
+
+// `env`, not `process.env` -- Workers don't populate `process.env` from
+// dashboard secrets, so credentials must come through the Worker's own
+// `env` binding (see README "Secrets").
+export async function getSheetsClient(env: Env): Promise<SheetsClient> {
+  const clientEmail = env.GOOGLE_SHEETS_CLIENT_EMAIL ?? '';
+  const privateKey = (env.GOOGLE_SHEETS_PRIVATE_KEY ?? '').replace(/\\n/g, '\n');
   const token = await fetchAccessToken(clientEmail, privateKey);
 
   return {

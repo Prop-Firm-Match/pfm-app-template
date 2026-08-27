@@ -5,8 +5,36 @@ export interface Identity {
   email: string;
 }
 
+// The Worker's env bindings/secrets -- see wrangler.jsonc for what's
+// declared, README "Secrets" for what's set where. Threaded through Context
+// so data-source clients (lib/db/client.ts, lib/data/*) get real bindings
+// at runtime instead of `process.env`, which Workers don't populate from
+// dashboard secrets.
+export interface Env {
+  ASSETS: Fetcher;
+{%- if data_source == "postgres" %}
+  HYPERDRIVE: { connectionString: string };
+{%- elif data_source == "bigquery" %}
+  BIGQUERY_PROJECT_ID?: string;
+  BIGQUERY_SERVICE_ACCOUNT_JSON?: string;
+{%- elif data_source == "google-sheets" %}
+  GOOGLE_SHEETS_CLIENT_EMAIL?: string;
+  GOOGLE_SHEETS_PRIVATE_KEY?: string;
+{%- endif %}
+{%- if auth == "cloudflare-access" %}
+  CF_ACCESS_TEAM_DOMAIN?: string;
+  CF_ACCESS_AUD?: string;
+{%- elif auth == "clerk" %}
+  CLERK_SECRET_KEY?: string;
+{%- elif auth == "google-oauth" %}
+  GOOGLE_OAUTH_CLIENT_ID?: string;
+  GOOGLE_WORKSPACE_DOMAIN?: string;
+{%- endif %}
+}
+
 export interface Context {
   request: Request;
+  env: Env;
   // Server-verified identity for this request (see lib/auth/verify-identity),
   // null when unauthenticated. Never trust a client-supplied header/claim
   // directly in a procedure -- this is the one place identity is trusted.

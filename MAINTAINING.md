@@ -343,3 +343,37 @@ bookkeeping, not a rendered answer. Then run `copier update --vcs-ref=HEAD
   verified against a real `wrangler deploy`, and no real propfirm precedent
   for a REST-only BigQuery client was found to model a fix on (unlike
   google-sheets). Revisit if it ever fails a real deploy.
+- Three bugs found via a real Windows test run (generating an actual app and
+  running it, not just the render matrix) — all fixed:
+  1. `pnpm dev` exited 1 on a clean `data_source=postgres` checkout —
+     `@cloudflare/vite-plugin` refuses to boot a hyperdrive binding with no
+     `localConnectionString`. Fixed: `wrangler.jsonc` now sets it, matching
+     `docker-compose.yml`.
+  2. The `HYPERDRIVE`/`BIGQUERY_*`/`GOOGLE_SHEETS_*` bindings were never
+     reached at runtime — `Context` had no `env` field, so
+     `lib/db/client.ts`/`lib/data/*` always fell through to `process.env`
+     (which Workers don't populate from dashboard secrets) or a hardcoded
+     local default. The bindings the README tells you to configure were
+     decorative. Fixed: `Env` now lives in `server/trpc.ts`, threaded onto
+     `Context`, and every data-source client takes `env` as a required
+     param instead of reading `process.env` (drizzle-kit is the one
+     legitimate `process.env.DATABASE_CONNECTION_STRING` user left — it's a
+     Node CLI outside the Worker, see `drizzle.config.ts`).
+  3. Root `wrangler.jsonc`'s `assets.directory` was `"./dist"`, but the
+     build emits `dist/client/` (frontend) + `dist/{project_name}/` (worker,
+     with its own generated `wrangler.json`) — a real `wrangler deploy`
+     would've served neither correctly (SPA 404 at `/`, worker bundle
+     downloadable at a guessable path). Fixed: `"./dist/client"`. **Not yet
+     verified against a real `wrangler deploy`** — confirmed via build
+     output paths matching, not an actual deploy.
+  Also fixed alongside: a `pg.Pool` created fresh per `getDb()` call
+  (connection leak) is now a module-level singleton; a third, dead,
+  never-set env var in `drizzle.config.ts`'s fallback chain was removed.
+  Not fixed — informational only: `@cloudflare/vite-plugin` copies `.env`
+  into `dist/{project_name}/.dev.vars` on build (its own documented
+  behavior, not this template's) — harmless while `.env` only holds the
+  local-dev placeholders in `.env.example`, but a real risk the first time
+  someone points local `.env` at production-shaped values; `dist/` is
+  gitignored so this doesn't reach source control at least. Blocked
+  `esbuild`/`workerd` postinstall scripts on first install are pnpm's own
+  supply-chain-safety prompt (`pnpm approve-builds`), not a template bug.

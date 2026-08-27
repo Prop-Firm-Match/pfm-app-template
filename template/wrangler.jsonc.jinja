@@ -12,11 +12,24 @@
   "compatibility_date": "2026-07-07",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
-    "directory": "./dist",
+    // Vite+ builds the client into dist/client/ and the worker into
+    // dist/{{ project_name | replace("-", "_") }}/ -- pointing this at
+    // bare "./dist" serves neither correctly (SPA 404s at "/", the worker
+    // bundle becomes downloadable at a guessable path).
+    "directory": "./dist/client",
     "binding": "ASSETS",
   },
   "routes": [{ "pattern": "{{ project_name }}.propfirmmatch.solutions", "custom_domain": true }],
 {%- if data_source == "postgres" %}
-  "hyperdrive": [{ "binding": "HYPERDRIVE", "id": "REPLACE_WITH_HYPERDRIVE_ID" }],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "REPLACE_WITH_HYPERDRIVE_ID",
+      // Required for local `pnpm dev` -- @cloudflare/vite-plugin refuses to
+      // boot with a hyperdrive binding that has no localConnectionString.
+      // Matches docker-compose.yml's postgres service.
+      "localConnectionString": "postgres://postgres:postgres@localhost:5432/{{ project_name | replace("-", "_") }}",
+    },
+  ],
 {%- endif %}
 }

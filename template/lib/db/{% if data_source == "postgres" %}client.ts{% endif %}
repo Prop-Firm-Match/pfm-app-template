@@ -1,22 +1,23 @@
-// data_source=postgres — Drizzle client over node-postgres, matching the
-// Cloudflare Hyperdrive pattern (Hyperdrive proxies TCP, node-postgres talks
-// to it like a normal Postgres connection). Falls back to a local connection
-// string for `pnpm dev` outside a Worker.
+// data_source=postgres — Drizzle client over node-postgres, talking to
+// Cloudflare Hyperdrive (production: the real binding; `pnpm dev`:
+// `wrangler.jsonc`'s `hyperdrive[0].localConnectionString`, which
+// @cloudflare/vite-plugin proxies through the same `env.HYPERDRIVE`
+// binding locally) -- no separate `process.env` fallback, one source of
+// truth in both environments. `db:generate`/`db:migrate` run outside the
+// Worker via drizzle-kit and use `DATABASE_CONNECTION_STRING` instead (see
+// drizzle.config.ts) since a Node CLI has no access to Worker bindings.
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
 import * as schema from './schema';
 
-interface HyperdriveEnv {
-  HYPERDRIVE?: { connectionString: string };
+interface Env {
+  HYPERDRIVE: { connectionString: string };
 }
 
-export function getDb(env?: HyperdriveEnv) {
-  const connectionString =
-    env?.HYPERDRIVE?.connectionString ??
-    process.env.DATABASE_CONNECTION_STRING ??
-    'postgres://postgres:postgres@localhost:5432/app';
+let db: ReturnType<typeof drizzle> | undefined;
 
-  const pool = new Pool({ connectionString });
-  return drizzle(pool, { schema });
+export function getDb(env: Env) {
+  db ??= drizzle(new Pool({ connectionString: env.HYPERDRIVE.connectionString }), { schema });
+  return db;
 }
