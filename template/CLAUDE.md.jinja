@@ -51,13 +51,43 @@ Actions deploy job. See `README.md` → Deploy.
 
 ## Pulling a template update
 
-```sh
-git status              # must be clean — copier refuses otherwise
-copier update --vcs-ref=HEAD --defaults
-git diff                 # review before committing — this diff is the point
-```
+This repo has no `pfm-app-template` skill/plugin of its own — it's a
+separate, already-generated repo. Don't assume that skill is loaded here;
+follow the steps below directly.
 
-Show the user that diff and wait for their go-ahead — do not run
-`git add -A && git commit` until they've actually approved it. This is not
-optional: the whole reason this repo supports `copier update` instead of a
-one-shot regenerate is so a human reviews what changed before it lands.
+0. **`copier` may not be installed.** Check with `copier --version` before
+   anything else — don't ask the user to install it themselves first. If
+   missing, install via `pipx install copier`, bootstrapping `pipx` itself
+   if needed (same on macOS and Windows): find a working Python — try
+   `python3 --version`, then `python --version` (Windows commonly only has
+   `python`) — then run `<that-python> -m pip install --user pipx`
+   followed by `<that-python> -m pipx ensurepath`. If neither resolves,
+   Python itself is missing — tell the user, don't try to install a whole
+   Python runtime yourself.
+1. `git status` — must be clean, copier refuses to update a dirty tree.
+   Commit or stash first if not; never discard uncommitted work to get
+   there.
+2. Confirm `.copier-answers.yml` exists at the repo root — if it's
+   missing, this repo either wasn't generated from `pfm-app-template` or
+   the file was deleted, and `copier update` has nothing to diff against.
+3. Run:
+   ```sh
+   copier update --vcs-ref=HEAD --defaults
+   ```
+   `--vcs-ref=HEAD` is required, not cosmetic — this template has no
+   release tags, and without it `copier update` looks for one and can
+   behave unpredictably.
+4. `git diff` — review before doing anything else. This diff is the entire
+   point of using copier instead of a one-shot regenerate; don't skip
+   straight to committing.
+5. Show the user that diff and wait for their explicit go-ahead. Only run
+   `git add -A && git commit` after they've actually approved it.
+
+**If `copier update` fails**, don't guess at a fix — clone
+`https://github.com/Prop-Firm-Match/pfm-app-template` (or fetch its
+`MAINTAINING.md` directly) and read its Troubleshooting section, which
+covers the specific failure modes already hit in practice (stale
+`_src_path`, a squashed/rewritten template history orphaning `_commit`,
+missing answers file, or — for an app generated a while ago — every auth/
+data-source file showing as delete+add plus a whole-repo line-ending diff,
+which is a real one-time transitional diff documented there, not a bug).
