@@ -9,13 +9,13 @@ interface Env {
 
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
-export async function verifyIdentity(request: Request, env?: Env): Promise<Identity | null> {
+export async function verifyIdentity(request: Request, env: Env): Promise<Identity | null> {
   const header = request.headers.get('Authorization');
   const idToken = header?.startsWith('Bearer ') ? header.slice(7) : null;
   if (!idToken) return null;
 
-  const clientId = env?.GOOGLE_OAUTH_CLIENT_ID ?? process.env.GOOGLE_OAUTH_CLIENT_ID;
-  const workspaceDomain = env?.GOOGLE_WORKSPACE_DOMAIN ?? process.env.GOOGLE_WORKSPACE_DOMAIN;
+  const clientId = env.GOOGLE_OAUTH_CLIENT_ID;
+  const workspaceDomain = env.GOOGLE_WORKSPACE_DOMAIN;
   if (!clientId || !workspaceDomain) return null;
 
   jwks ??= createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));

@@ -6,6 +6,14 @@
 // truth in both environments. `db:generate`/`db:migrate` run outside the
 // Worker via drizzle-kit and use `DATABASE_CONNECTION_STRING` instead (see
 // drizzle.config.ts) since a Node CLI has no access to Worker bindings.
+//
+// One Pool per call, not a module-level singleton: a Workers isolate cannot
+// carry a TCP socket across requests, and reusing one here reproduces "the
+// Worker's code had hung and would never generate a response" on the second
+// request. This matches Cloudflare's own Hyperdrive examples ("create a new
+// client per request -- Hyperdrive maintains the underlying connection pool,
+// so creating a new client is fast"). max: 1 since one request only needs
+// one connection unless it fans out into parallel queries.
 import { drizzle } from 'drizzle-orm/node-postgres';
 import { Pool } from 'pg';
 
@@ -15,9 +23,8 @@ interface Env {
   HYPERDRIVE: { connectionString: string };
 }
 
-let db: ReturnType<typeof drizzle> | undefined;
-
 export function getDb(env: Env) {
-  db ??= drizzle(new Pool({ connectionString: env.HYPERDRIVE.connectionString }), { schema });
-  return db;
+  return drizzle(new Pool({ connectionString: env.HYPERDRIVE.connectionString, max: 1 }), {
+    schema,
+  });
 }

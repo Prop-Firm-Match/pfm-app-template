@@ -1,3 +1,6 @@
+import { afterEach } from 'vite-plus/test';
+import { cleanup } from '@testing-library/react';
+
 // jsdom doesn't implement ResizeObserver, which recharts' ResponsiveContainer
 // (src/components/ui/chart.tsx) needs to mount at all -- without this stub,
 // any test that renders a chart throws "ResizeObserver is not defined".
@@ -8,3 +11,14 @@ class ResizeObserverStub {
 }
 
 globalThis.ResizeObserver ??= ResizeObserverStub;
+
+// @testing-library/react only auto-registers its afterEach(cleanup) when it
+// detects Vitest's *global* test API (test.globals: true). This config
+// deliberately imports describe/it/expect explicitly instead of using
+// globals, so cleanup has to be wired up by hand -- without it, the DOM from
+// one test's render() is still mounted during the next test in the same
+// file, and a second render/query in that file fails with "found multiple
+// elements".
+afterEach(() => {
+  cleanup();
+});

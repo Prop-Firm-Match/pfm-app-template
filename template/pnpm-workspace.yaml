@@ -12,3 +12,11 @@ peerDependencyRules:
   allowedVersions:
     vite: '*'
     vitest: '*'
+# Without this, pnpm blocks these packages' postinstall scripts by default
+# and prints "Ignored build scripts: esbuild, workerd" on every install --
+# both are required (esbuild by vite-plus/oxfmt tooling, workerd by
+# wrangler/the local Worker runtime), so allow them explicitly instead of
+# leaving every generated app to `pnpm approve-builds` on first install.
+onlyBuiltDependencies:
+  - esbuild
+  - workerd

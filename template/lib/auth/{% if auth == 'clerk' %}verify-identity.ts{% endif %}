@@ -6,12 +6,12 @@ interface Env {
   CLERK_SECRET_KEY?: string;
 }
 
-export async function verifyIdentity(request: Request, env?: Env): Promise<Identity | null> {
+export async function verifyIdentity(request: Request, env: Env): Promise<Identity | null> {
   const header = request.headers.get('Authorization');
   const token = header?.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return null;
 
-  const secretKey = env?.CLERK_SECRET_KEY ?? process.env.CLERK_SECRET_KEY;
+  const secretKey = env.CLERK_SECRET_KEY;
   if (!secretKey) return null;
 
   try {

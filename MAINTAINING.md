@@ -280,6 +280,19 @@ log --oneline -1` in this repo) — this is the one other line in that file
 bookkeeping, not a rendered answer. Then run `copier update --vcs-ref=HEAD
 --defaults` normally and review the diff before committing.
 
+**`copier update` on an app generated before the Windows-portability fixes
+(see Known gaps) shows every auth/data-source conditional file as delete +
+add, plus a whole-repo CRLF→LF renormalisation diff.** Expected, one-time.
+Those fixes renamed 13 `"`-quoted conditional filenames to `'` (Windows
+can't check out `"` in a filename at all) and added
+`template/.gitattributes` (`eol=lf`, so Git for Windows'
+`core.autocrlf=true` default stops producing CRLF files that fail
+`format:check` while `git status` reports clean). Review the diff — it
+should be pure renames plus line-ending normalisation, no content changes —
+then commit as usual. If `.gitattributes` alone produces a large diff,
+`git add --renormalize .` in the downstream app first makes that part of
+the diff explicit before `copier update` runs.
+
 ---
 
 ## Known gaps
@@ -366,14 +379,102 @@ bookkeeping, not a rendered answer. Then run `copier update --vcs-ref=HEAD
      downloadable at a guessable path). Fixed: `"./dist/client"`. **Not yet
      verified against a real `wrangler deploy`** — confirmed via build
      output paths matching, not an actual deploy.
-  Also fixed alongside: a `pg.Pool` created fresh per `getDb()` call
-  (connection leak) is now a module-level singleton; a third, dead,
-  never-set env var in `drizzle.config.ts`'s fallback chain was removed.
+  Also fixed alongside: a third, dead, never-set env var in
+  `drizzle.config.ts`'s fallback chain was removed.
   Not fixed — informational only: `@cloudflare/vite-plugin` copies `.env`
   into `dist/{project_name}/.dev.vars` on build (its own documented
   behavior, not this template's) — harmless while `.env` only holds the
   local-dev placeholders in `.env.example`, but a real risk the first time
   someone points local `.env` at production-shaped values; `dist/` is
-  gitignored so this doesn't reach source control at least. Blocked
-  `esbuild`/`workerd` postinstall scripts on first install are pnpm's own
-  supply-chain-safety prompt (`pnpm approve-builds`), not a template bug.
+  gitignored so this doesn't reach source control at least.
+- A detailed Windows 11 test report (generating and running an actual app,
+  not just the render matrix) surfaced these, all fixed at the same commit:
+  1. **13 filenames used `"` for the Jinja conditional** (e.g.
+     `{% if data_source == "postgres" %}client.ts{% endif %}`) — `"` is
+     illegal in a Windows filename, so `git clone`/`copier update` failed
+     checkout entirely on Windows, for exactly the files that render for a
+     default `postgres`/`cloudflare-access` app. Fixed: swapped to `'`
+     (Jinja treats both the same) across all 13 — a pure rename, verified
+     against the render matrix.
+  2. **No `.gitattributes`**, so Git for Windows' default
+     `core.autocrlf=true` checks generated repos out as CRLF, which
+     `format:check` (oxfmt) rejects — while `git status` reports the tree
+     clean, so the failure looks causeless and isn't caught by CI (which
+     runs `ubuntu-24.04` and never sees CRLF). Fixed: `template/.gitattributes`
+     forces `eol=lf` on checkout, on every platform.
+  3. **A `pg.Pool` cached at module scope in `lib/db/client.ts`** — this
+     session's earlier "leak fix" (below) was itself the bug: a Workers
+     isolate cannot carry a TCP socket across requests, and reusing one
+     produces "the Worker's code had hung and would never generate a
+     response" on the second request. Confirmed against Cloudflare's own
+     Hyperdrive docs (`developers.cloudflare.com/workers/best-practices/` —
+     "create a new client per request, Hyperdrive maintains the underlying
+     pool") and reproduced/fixed: `getDb()` now creates a fresh `Pool` (`max:
+     1`) per call, no module-level singleton. Verified live: 5 consecutive
+     `listExamples` requests against a real local Postgres, all ~10-20ms, no
+     hang.
+  4. **`protectedProcedure` always 401'd under `pnpm dev` for
+     `auth=cloudflare-access`** — no `Cf-Access-Jwt-Assertion` header exists
+     locally (dev never runs behind Access), so every protected call failed
+     and `.env.example`'s "everything else works" comment was wrong. Fixed:
+     `verify-identity.ts` returns a fake `dev@localhost` identity when the
+     header is absent, gated on `import.meta.env.DEV` (statically replaced
+     at build time, so the branch is dead-code-eliminated from production
+     bundles — not an env-var-only guard that could be misconfigured into an
+     auth bypass). Verified live: `whoami` returns `dev@localhost` locally.
+  5. All three `verify-identity.ts` variants (cloudflare-access, clerk,
+     google-oauth) had the same dead `process.env` fallback pattern as the
+     data-source clients did before the earlier fix (`env?.X ??
+     process.env.X`, when `worker.ts` always passes a real `env`). Removed;
+     `env` is now a required param in all three.
+  6. **No initial migration shipped** — `drizzle/` was absent, so
+     `pnpm db:migrate` against a fresh database succeeded and created
+     nothing, and `listExamples` then failed on a missing relation. Fixed:
+     a real `drizzle-kit generate` output (matching `lib/db/schema.ts`
+     exactly) now ships under
+     `template/{% if data_source == 'postgres' %}drizzle{% endif %}/` — same
+     conditional-directory-name pattern as the single-file toggles. Verified
+     live: `db:migrate` against a fresh Postgres created the `examples`
+     table, and an inserted row round-tripped through `listExamples`.
+  7. `pnpm install` printed `Ignored build scripts: esbuild, workerd` on
+     every install in every generated app (pnpm's supply-chain-safety
+     prompt). Fixed: `onlyBuiltDependencies: [esbuild, workerd]` in
+     `pnpm-workspace.yaml` allows exactly those two instead of leaving every
+     app owner to `pnpm approve-builds` blind.
+  8. `vitest.setup.ts` had no `afterEach(cleanup)` — this config
+     intentionally imports `describe`/`it`/`expect` explicitly rather than
+     using Vitest's `test.globals: true`, so `@testing-library/react`'s
+     usual auto-registration never kicks in. A second `render()`/query in
+     the same test file failed with "found multiple elements"; the shipped
+     `App.test.tsx` never exercised this because it renders once. Fixed:
+     explicit `afterEach(cleanup)` in `vitest.setup.ts`.
+  9. `corepack enable pnpm` needs an elevated shell on Windows (writes shims
+     into `C:\Program Files\nodejs`); the obvious `winget install
+     OpenJS.NodeJS` package doesn't carry the exact `.node-version` patch;
+     `docker compose up -d` (the README's only documented local-DB path)
+     needs Docker Desktop, which needs WSL2/Hyper-V, and a native Postgres
+     needs both `wrangler.jsonc`'s `localConnectionString` and `.env`'s
+     `DATABASE_CONNECTION_STRING` pointed at it (different consumers: the
+     dev server vs. `drizzle-kit`). All three documented in README's Local
+     development section now.
+  10. `wrangler.jsonc`'s Hyperdrive `id` ships as the literal placeholder
+      `"REPLACE_WITH_HYPERDRIVE_ID"`, and nothing catches a deploy that
+      still has it — it fails at query time, not build time. Documented as
+      an explicit numbered step in README's Deploy section
+      (`wrangler hyperdrive create`) for `data_source=postgres`; still not
+      enforced by any automated check.
+  11. CODEOWNERS uses a bare email; GitHub only resolves that to a reviewer
+      if it's a *verified* email on a GitHub account with repo access, and
+      fails silently otherwise. Not changed (bare email is the only thing
+      `owner` collects), but now called out in a comment in the generated
+      `CODEOWNERS` file itself.
+  Not reproduced / not changed: a stray committed `tsconfig.tsbuildinfo` in
+  a generated app (the report's theory — produced at template-authoring
+  time and copied — didn't hold up: `*.tsbuildinfo` is gitignored, and a
+  fresh `copier copy` against this template's current tree carries no such
+  file; the one the report saw was very likely `tsc -b`'s own normal build
+  cache in that developer's working tree, not a template defect). The
+  README's `TEST_DATABASE_URL` row was reworded instead of wiring a
+  Postgres service into `ci.yml` — no test in the template actually touches
+  a database yet, so a real CI service for it would be speculative
+  infrastructure for a feature that doesn't exist.

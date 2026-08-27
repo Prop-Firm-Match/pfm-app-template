@@ -1,0 +1,14 @@
+# Normalise to LF in the repo and in the working tree, on every platform.
+# Without this, Git for Windows' default core.autocrlf=true checks source
+# files out as CRLF -- oxfmt (`pnpm format:check`) rejects them, while
+# `git status` still reports the tree clean, so the failure looks causeless.
+# CI runs on ubuntu-24.04 and never sees the problem either.
+* text=auto eol=lf
+
+# Binary assets -- never touch these.
+*.ico   binary
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.woff  binary
+*.woff2 binary

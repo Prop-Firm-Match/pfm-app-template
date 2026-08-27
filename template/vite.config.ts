@@ -10,8 +10,10 @@ import { cloudflare } from '@cloudflare/vite-plugin';
 // Vitest, Oxlint and Oxfmt. lint/fmt config below replaces the old standalone
 // .oxlintrc.json. Type-aware lint (`typeCheck: true`) is deliberately left
 // off -- its tsgolint engine currently misflags the CSS side-effect import in
-// .storybook/preview.tsx that plain `tsc --noEmit` (the real type-check gate,
-// see package.json) handles correctly.
+// .storybook/preview.tsx (present when enable_storybook=true) that plain
+// `tsc --noEmit` (the real type-check gate, see package.json) handles
+// correctly. Harmless when Storybook is disabled -- there's simply no such
+// import for tsgolint to misflag.
 //
 // fmt ignores markdown: README.md's tables get padded with `{{ project_name }}`
 // substituted in at generation time, so their column widths vary by app --

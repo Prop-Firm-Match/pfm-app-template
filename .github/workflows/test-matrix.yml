@@ -18,3 +18,19 @@ jobs:
       - run: pip install copier
 
       - run: bash scripts/test-matrix.sh
+
+  # ubuntu checkout can't catch a filename Windows can't create at all (e.g.
+  # a `"` in a Jinja conditional filename) -- render-only, one default
+  # combination is enough to catch that class of regression.
+  windows-checkout:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+
+      - run: pip install copier
+
+      - run: copier copy --data project_name=windows-guard --data owner="ci@propfirmmatch.com" --data framework=vite --data data_source=postgres --data auth=cloudflare-access --data enable_i18n=false --data enable_file_storage=false --data enable_testing=true --data enable_storybook=false --defaults . "$env:RUNNER_TEMP\windows-guard"

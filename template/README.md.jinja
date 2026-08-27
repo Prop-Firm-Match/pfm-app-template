@@ -8,15 +8,26 @@ Owner: **{{ owner }}** · Data source: **{{ data_source }}** · Auth: **{{ auth 
 Deploy is via **Cloudflare Workers Builds** (CF dashboard → Workers & Pages →
 Connect to Git → select this repo), not a GitHub Actions deploy job.
 
-1. Connect this repo in the Cloudflare dashboard.
-2. Set the deploy command to:
+{%- if data_source == "postgres" %}
+1. Create the real Hyperdrive config and replace the placeholder in
+   `wrangler.jsonc`:
+   ```
+   pnpm dlx wrangler hyperdrive create {{ project_name }} --connection-string="<your production Postgres connection string>"
+   ```
+   Copy the returned `id` over `"REPLACE_WITH_HYPERDRIVE_ID"` in
+   `wrangler.jsonc`, commit it — it's a config ID, not a secret. Deploying
+   with the placeholder still in place fails at query time, not at build
+   time, so nothing catches this step being skipped.
+{%- endif %}
+{{ "2" if data_source == "postgres" else "1" }}. Connect this repo in the Cloudflare dashboard.
+{{ "3" if data_source == "postgres" else "2" }}. Set the deploy command to:
    ```
    pnpm dlx wrangler deploy --keep-vars
    ```
    `--keep-vars` is required — env vars/secrets below are set in the CF
    dashboard, and a plain deploy would wipe them on every push.
-3. Set the vars/secrets listed below in the CF dashboard for this Worker.
-4. Route: `{{ project_name }}.propfirmmatch.solutions`.
+{{ "4" if data_source == "postgres" else "3" }}. Set the vars/secrets listed below in the CF dashboard for this Worker.
+{{ "5" if data_source == "postgres" else "4" }}. Route: `{{ project_name }}.propfirmmatch.solutions`.
 
 ## Secrets
 
@@ -25,7 +36,7 @@ Connect to Git → select this repo), not a GitHub Actions deploy job.
 | Secret | Needed when |
 |---|---|
 {%- if enable_testing and data_source == "postgres" %}
-| `TEST_DATABASE_URL` | Running DB-touching tests |
+| `TEST_DATABASE_URL` | Not wired into `ci.yml` by default -- add it, plus a `postgres` service container, if you add DB-touching tests |
 {%- endif %}
 {%- if not (enable_testing and data_source == "postgres") %}
 | _(none required by default)_ | |
@@ -71,6 +82,29 @@ pnpm dev
 `pnpm dev` runs the frontend and the tRPC API (`server/router.ts`) together
 in one process via `@cloudflare/vite-plugin` — no separate `wrangler dev`
 needed.
+
+**Windows:** `corepack enable pnpm` needs an elevated (Run as Administrator)
+shell — it writes shims next to the Node install in `C:\Program Files\nodejs`,
+which isn't user-writable otherwise. Without elevation, install pnpm the
+same version `package.json`'s `packageManager` pins via
+`npm i -g pnpm@<version>` instead, which needs no elevation. Also,
+`winget install OpenJS.NodeJS` won't have the exact `.node-version` patch —
+use `winget install OpenJS.NodeJS.LTS --version <version>`, or `fnm`/
+`nvm-windows`, which read `.node-version` directly.
+{%- if data_source == "postgres" %}
+
+**No Docker?** `docker compose up -d` needs Docker Desktop, which on Windows
+needs WSL2 or Hyper-V. A native Postgres (e.g. `winget install
+PostgreSQL.PostgreSQL.17`) works fine, but two separate settings point at the
+database and are read by different consumers — get both, or the dev server
+stays aimed at the Docker-Compose default while migrations run somewhere
+else:
+
+| Setting | Read by |
+|---|---|
+| `hyperdrive[0].localConnectionString` in `wrangler.jsonc` | the dev server, via `@cloudflare/vite-plugin` |
+| `DATABASE_CONNECTION_STRING` in `.env` | `drizzle-kit` (`db:generate`/`db:migrate`) — runs as a Node CLI outside the Worker |
+{%- endif %}
 
 ## Design system
 
