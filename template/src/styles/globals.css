@@ -85,8 +85,10 @@
 
   --radius: 0.75rem;
 
-  /* Brand gradient — pink -> purple, primary CTA / brand mark */
-  --pfm-gradient: linear-gradient(90deg, hsl(330.9 77% 59%), hsl(259 93% 68%));
+  /* Brand gradient — purple -> pink, primary CTA / brand mark.
+     Matches propfirm's packages/tailwind/styles.css --pfm-gradient exactly
+     (315deg, purple 0% -> pink 100%), not just the two colors. */
+  --pfm-gradient: linear-gradient(315deg, hsl(259 93% 68%) 0%, hsl(330.9 77% 59%) 100%);
 }
 
 body {
