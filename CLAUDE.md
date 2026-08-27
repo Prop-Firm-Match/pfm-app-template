@@ -36,6 +36,9 @@ load-bearing rules, so you don't skip them by accident.
    before every downstream app's next `copier update` picks it up.
 6. If you add/remove/rename a question in `copier.yml`, update
    `scripts/test-matrix.sh`'s answer axes in the same change.
+7. **Every commit to `main` bumps `.claude-plugin/plugin.json`'s `version`**
+   (patch bump for a normal fix/change). Do this in the same commit as the
+   change, not a separate follow-up.
 
 ## Quick orientation
 
