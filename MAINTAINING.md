@@ -457,13 +457,11 @@ the diff explicit before `copier update` runs.
      `env` is now a required param in all three.
   6. **No initial migration shipped** — `drizzle/` was absent, so
      `pnpm db:migrate` against a fresh database succeeded and created
-     nothing, and `listExamples` then failed on a missing relation. Fixed:
-     a real `drizzle-kit generate` output (matching `lib/db/schema.ts`
-     exactly) now ships under
-     `template/{% if data_source == 'postgres' %}drizzle{% endif %}/` — same
-     conditional-directory-name pattern as the single-file toggles. Verified
-     live: `db:migrate` against a fresh Postgres created the `examples`
-     table, and an inserted row round-tripped through `listExamples`.
+     nothing, and `listExamples` then failed on a missing relation. First
+     fixed by shipping a real `drizzle-kit generate` output as template
+     content; **superseded** by the fix below (this was `drizzle/**` app
+     state shipped as template content, which is the wrong shape — see
+     that entry for why and what replaced it).
   7. `pnpm install` printed `Ignored build scripts: esbuild, workerd` on
      every install in every generated app (pnpm's supply-chain-safety
      prompt). Fixed: `onlyBuiltDependencies: [esbuild, workerd]` in
@@ -523,9 +521,21 @@ the diff explicit before `copier update` runs.
      owns; any app with a real schema has moved past `idx: 0` with its own
      tag, so without a skip rule `copier update` would try to reconcile the
      template's `0000_init`/journal against the app's on every future
-     update, corrupting it. Fixed: `_skip_if_exists: [drizzle/**]` in
-     `copier.yml` — the migration is created once by `copier copy` and
-     never touched again by `copier update`.
+     update, corrupting it. First fixed with `_skip_if_exists: [drizzle/**]`
+     in `copier.yml`, which is *name*-based: it stops the corruption (real
+     apps' `_journal.json`/`meta/*.json` already exist under those names, so
+     they're skipped) but doesn't stop a `0000_init.sql` reappearing on
+     every update for an app whose own first migration has a different
+     drizzle-generated name (`0000_wild_betty_ross.sql`, etc.) — harmless
+     (not referenced by the journal, drizzle-kit never runs it) but a
+     recurring untracked stray. **Superseded**: don't ship a migration at
+     all. `lib/db/schema.ts` already starts with one table specifically so
+     `pnpm db:generate` has something to diff against on a fresh clone;
+     README's local-dev steps now run `db:generate && db:migrate` before
+     first `pnpm dev`, which solves the original "fresh `db:migrate` is a
+     silent no-op" problem without putting app state in the template at
+     all. `_skip_if_exists` removed from `copier.yml` — nothing left that
+     needs it.
   3. `.gitignore`'s `.vite-hooks/_` matched a file literally named `_`
      inside that directory, not the directory itself — so the pre-commit
      hook `vp config` writes was neither ignored nor tracked, and landed in

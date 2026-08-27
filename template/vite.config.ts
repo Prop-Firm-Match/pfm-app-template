@@ -20,6 +20,12 @@ import { cloudflare } from '@cloudflare/vite-plugin';
 // there's no single byte-for-byte oxfmt-clean version to keep in the template
 // source. Code (the part `format:check` actually gates in CI) has no such
 // generation-time variance and is kept fmt-clean.
+//
+// fmt also ignores drizzle/ (data_source=postgres only, no-op glob
+// otherwise): drizzle-kit generate/migrate own that directory's format, and
+// re-running `pnpm db:generate` after a schema change is a normal, frequent
+// workflow step -- format:check failing on drizzle-kit's own JSON output
+// every time would be noise, not a real lint signal.
 export default defineConfig({
   // Pre-commit hook (wired up by `vp config`, run automatically via the
   // package.json "prepare" script): fixes staged files' lint/fmt issues
@@ -29,7 +35,7 @@ export default defineConfig({
   },
   fmt: {
     singleQuote: true,
-    ignorePatterns: ['**/*.md'],
+    ignorePatterns: ['**/*.md', 'drizzle/**'],
   },
   lint: {
     categories: {

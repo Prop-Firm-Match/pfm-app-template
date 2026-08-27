@@ -2,18 +2,6 @@ _subdirectory: template
 _envops:
   keep_trailing_newline: true
 
-# drizzle/** is app state, not template content -- drizzle-kit owns
-# _journal.json as an append-only migration registry (idx 0, 1, 2... keyed
-# off whatever's already there) and the template's own 0000_init.sql/
-# 0000_snapshot.json/_journal.json exist only to make a fresh `pnpm
-# db:migrate` non-empty on day one. Any app with a real schema has since
-# moved past index 0000 with its own tag; without _skip_if_exists, copier
-# tries to reconcile the template's version against the app's on every
-# future `copier update`, which corrupts the journal (or re-prompts the
-# same unresolvable conflict) forever. Create once, never touch again.
-_skip_if_exists:
-  - drizzle/**
-
 project_name:
   type: str
   help: "Repo/app name (kebab-case), used as the CF Workers deploy name and *.propfirmmatch.solutions subdomain"

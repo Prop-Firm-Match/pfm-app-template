@@ -78,8 +78,19 @@ cp .env.example .env
 docker compose up -d      # local Postgres, matches DATABASE_CONNECTION_STRING
 {%- endif %}
 pnpm install
+{%- if data_source == "postgres" %}
+pnpm db:generate && pnpm db:migrate   # first time only, or after schema.ts changes
+{%- endif %}
 pnpm dev
 ```
+{%- if data_source == "postgres" %}
+
+No migration ships with the template — `lib/db/schema.ts` starts with one
+table (`examples`) precisely so `db:generate` has something to diff against
+on a fresh clone. `drizzle/` is real app state (an append-only history
+`drizzle-kit` owns), not template content, so it's created once here and
+never touched again by `copier update`.
+{%- endif %}
 
 `pnpm dev` runs the frontend and the tRPC API (`server/router.ts`) together
 in one process via `@cloudflare/vite-plugin` — no separate `wrangler dev`
