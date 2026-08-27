@@ -16,16 +16,18 @@ Connect to Git → select this repo), not a GitHub Actions deploy job.
    ```
    Copy the returned `id` over `"REPLACE_WITH_HYPERDRIVE_ID"` in
    `wrangler.jsonc`, commit it — it's a config ID, not a secret. Deploying
-   with the placeholder still in place fails at query time, not at build
-   time, so nothing catches this step being skipped.
+   with the placeholder still in place would otherwise fail at query time,
+   not at build time — `pnpm run predeploy` (below) catches it instead.
 {%- endif %}
 {{ "2" if data_source == "postgres" else "1" }}. Connect this repo in the Cloudflare dashboard.
 {{ "3" if data_source == "postgres" else "2" }}. Set the deploy command to:
    ```
-   pnpm dlx wrangler deploy --keep-vars
+   pnpm run predeploy && pnpm dlx wrangler deploy --keep-vars
    ```
    `--keep-vars` is required — env vars/secrets below are set in the CF
-   dashboard, and a plain deploy would wipe them on every push.
+   dashboard, and a plain deploy would wipe them on every push. `predeploy`
+   fails the build if `wrangler.jsonc` still has an unfilled
+   `REPLACE_WITH_*` placeholder.
 {{ "4" if data_source == "postgres" else "3" }}. Set the vars/secrets listed below in the CF dashboard for this Worker.
 {{ "5" if data_source == "postgres" else "4" }}. Route: `{{ project_name }}.propfirmmatch.solutions`.
 

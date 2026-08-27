@@ -5,4 +5,4 @@ dist/
 .env*
 !.env.example
 storybook-static/
-.vite-hooks/_
+.vite-hooks/

@@ -10,8 +10,9 @@
 {%- set _ = devDeps.append('"vite-plus": "catalog:"') -%}
 {%- set _ = devDeps.append('"@cloudflare/vite-plugin": "^1.54.0"') -%}
 {%- set _ = scripts.append('"dev": "vp dev"') -%}
-{%- set _ = scripts.append('"build": "tsc -b && vp build"') -%}
+{%- set _ = scripts.append('"build": "tsc -b && vp build && node scripts/strip-dev-vars.mjs"') -%}
 {%- set _ = scripts.append('"preview": "vp preview"') -%}
+{%- set _ = scripts.append('"predeploy": "node scripts/check-deploy-config.mjs"') -%}
 
 {#- design system peer deps, always -#}
 {%- set _ = deps.append('"@radix-ui/react-slot": "^1.3.3"') -%}

@@ -280,9 +280,37 @@ log --oneline -1` in this repo) — this is the one other line in that file
 bookkeeping, not a rendered answer. Then run `copier update --vcs-ref=HEAD
 --defaults` normally and review the diff before committing.
 
+**On Windows, `copier update` fails outright with `error: invalid path
+'template/lib/auth/{% if auth == "clerk" %}...'` / `fatal: Could not reset
+index file to revision 'HEAD'`, for an app whose recorded `_commit` predates
+the Windows-portability fixes (see Known gaps).** This is a harder failure
+than the diff described in the next entry — the update never gets far
+enough to produce one. `copier update` checks out *both* the old and new
+template revision to compute its three-way merge, and the rename that fixed
+Windows checkout doesn't help checking out the *old* revision, which still
+has the `"`-quoted filenames Windows can't create. Every app whose
+`_commit` predates that fix is stuck on Windows until it crosses that one
+boundary some other way — new apps generated after it are unaffected, and
+once an app is past it, ordinary updates work fine again. Two ways across:
+
+1. Run that one `copier update` on Linux/macOS/WSL, then continue on
+   Windows as normal.
+2. Render-and-merge locally (fully offline, no non-Windows machine needed):
+   ```sh
+   copier copy --vcs-ref=<the fix commit> --defaults \
+     --data project_name=<name> --data owner=<owner> \
+     --data auth=<...> --data data_source=<...> \
+     <template-clone> /tmp/pristine
+   # diff /tmp/pristine against the app, merge per file by hand,
+   # then set _commit: <the fix commit> in .copier-answers.yml
+   ```
+   `_commit`, not `_src_path`, is the field to set here — see the
+   `_commit`-doesn't-exist entry above for why hand-editing it is safe.
+
 **`copier update` on an app generated before the Windows-portability fixes
 (see Known gaps) shows every auth/data-source conditional file as delete +
-add, plus a whole-repo CRLF→LF renormalisation diff.** Expected, one-time.
+add, plus a whole-repo CRLF→LF renormalisation diff.** Expected, one-time,
+and only reachable once the entry above gets the app across that boundary.
 Those fixes renamed 13 `"`-quoted conditional filenames to `'` (Windows
 can't check out `"` in a filename at all) and added
 `template/.gitattributes` (`eol=lf`, so Git for Windows'
@@ -478,3 +506,49 @@ the diff explicit before `copier update` runs.
   Postgres service into `ci.yml` — no test in the template actually touches
   a database yet, so a real CI service for it would be speculative
   infrastructure for a feature that doesn't exist.
+- A follow-up audit at `55f60c4` (the commit above) found two issues that
+  were *consequences* of that same commit's own fixes, plus three smaller
+  ones. All fixed:
+  1. Crossing from a pre-`55f60c4` app to `55f60c4`+ via `copier update`
+     still fails on Windows — the filename rename fixed checking out the
+     *new* revision, but `copier update` also checks out the *old* one to
+     three-way-merge against, and the old revision still has the
+     `"`-quoted filenames. Not a code fix (nothing to fix — the old
+     revision's history is what it is); documented as a Troubleshooting
+     entry with two ways across the boundary (update once on a non-Windows
+     machine, or render-and-merge locally with `copier copy
+     --vcs-ref=<commit>`).
+  2. **The shipped `drizzle/` migration was template-managed content for
+     app *state*.** `_journal.json` is an append-only registry drizzle-kit
+     owns; any app with a real schema has moved past `idx: 0` with its own
+     tag, so without a skip rule `copier update` would try to reconcile the
+     template's `0000_init`/journal against the app's on every future
+     update, corrupting it. Fixed: `_skip_if_exists: [drizzle/**]` in
+     `copier.yml` — the migration is created once by `copier copy` and
+     never touched again by `copier update`.
+  3. `.gitignore`'s `.vite-hooks/_` matched a file literally named `_`
+     inside that directory, not the directory itself — so the pre-commit
+     hook `vp config` writes was neither ignored nor tracked, and landed in
+     the first `git add -A`. This was previously masked: generated repos
+     had no `.git`, so the hook was never created at all. Fixed:
+     `.vite-hooks/`.
+  4. `pnpm build` copies `.env`'s contents into
+     `dist/{project_name}/.dev.vars` (`@cloudflare/vite-plugin`'s own local-
+     dev behavior) — harmless with `.env.example` defaults, a real
+     credential-in-build-artifact risk the first time `.env` points at
+     something real. `dist/` is gitignored so `gitleaks` never sees it, and
+     `.assetsignore` only stops the file being *served*, not *shipped*.
+     Fixed: `scripts/strip-dev-vars.mjs` runs as part of `build`, deleting
+     any `.dev.vars` under `dist/*/` after every build.
+  5. `wrangler.jsonc`'s `"REPLACE_WITH_HYPERDRIVE_ID"` placeholder reached
+     the deploy config unvalidated — a deploy with it still in place
+     succeeded and only failed at query time, in production. Fixed:
+     `scripts/check-deploy-config.mjs` (new `predeploy` script) fails the
+     build if any `REPLACE_WITH_*` placeholder survives in `wrangler.jsonc`;
+     README's documented CF dashboard deploy command is now `pnpm run
+     predeploy && pnpm dlx wrangler deploy --keep-vars`.
+  6. Cosmetic: `.storybook/` shipped as an empty directory when
+     `enable_storybook=false` (its two files were already individually
+     gated, the directory name wasn't). Fixed the same way as `drizzle/`:
+     `template/{% if enable_storybook %}.storybook{% endif %}/` — no
+     directory at all when disabled.
