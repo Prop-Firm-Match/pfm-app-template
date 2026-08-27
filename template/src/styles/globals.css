@@ -9,11 +9,20 @@
   expected and is how brand-token updates propagate.
 */
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
+  /* Same PFM type pair as the rest of the brand: Inter for body/data,
+     Poppins for display/headings. `--font-serif` is the vendored
+     tailwind.config.ts key name for the display-font slot -- it's Poppins,
+     not a literal serif face; use `font-serif` on headings. */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Poppins', 'Inter', system-ui, sans-serif;
+
   --background: 330 6.7% 5.9%;
   --background-primary: 330 5% 7.8%;
   --background-secondary: 330 4% 9.8%;
