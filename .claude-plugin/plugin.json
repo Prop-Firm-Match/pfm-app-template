@@ -1,7 +1,7 @@
 {
   "name": "pfm-app-template",
   "displayName": "PFM app template",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Generate new internal Prop Firm Match apps (Vite + React 19 + Cloudflare Workers + tRPC, pre-wired with auth, a data layer, the PFM design system, and CI), pull template updates into apps already generated from it, or migrate an existing ad-hoc internal tool onto the same stack.",
   "author": {
     "name": "Prop Firm Match Engineering"
