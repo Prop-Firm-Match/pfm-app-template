@@ -12,6 +12,11 @@ lives in this plugin's own repo —
 `${CLAUDE_PLUGIN_ROOT}/MAINTAINING.md` (complete answers/toggle
 reference, troubleshooting) and `${CLAUDE_PLUGIN_ROOT}/CLAUDE.md`
 (maintainer rules) — consult those for anything not covered here.
+`${CLAUDE_PLUGIN_ROOT}` only resolves inside a Claude Code plugin install;
+if this skill was installed some other way (e.g. via `npx skills` into a
+different agent) and that variable is literally empty/unresolved, use
+`https://github.com/Prop-Firm-Match/pfm-app-template` instead — clone it or
+fetch the two files directly.
 
 ## Before either workflow
 

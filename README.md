@@ -6,10 +6,34 @@ tech, ready for engineering to deploy.
 
 ## Install
 
+**Claude Code** (full plugin — the skill below, plus this repo's
+`MAINTAINING.md`/`CLAUDE.md` as reference the skill can read):
+
 ```
 /plugin marketplace add Prop-Firm-Match/pfm-app-template
 /plugin install pfm-app-template
 ```
+
+(or from a shell, without opening Claude Code first: `claude plugin
+marketplace add Prop-Firm-Match/pfm-app-template && claude plugin install
+pfm-app-template`)
+
+**Cursor, Codex CLI, or any other agent that reads `SKILL.md`** — this
+repo's skill installs the same way as any other, via the open
+[Skills CLI](https://skills.sh) (`npx skills`, 73+ agents supported):
+
+```
+npx skills add Prop-Firm-Match/pfm-app-template --skill pfm-app-template
+```
+
+Add `-g` to install globally instead of per-project. The CLI drops
+`skills/pfm-app-template/SKILL.md` into whichever path your agent expects
+(`.cursor/skills/`, `.agents/skills/`, etc.) — you don't need to know that
+path yourself.
+
+Either way, this is a **private repo** — whichever tool does the clone
+needs your git credentials already set up (`gh auth login` covers this for
+everything the skill itself does too, on macOS and Windows alike).
 
 ## Use it
 
