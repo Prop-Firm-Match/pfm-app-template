@@ -1,0 +1,9 @@
+import type { Identity } from '../../server/trpc';
+
+// auth=none -- this app is intentionally public. There is no identity to
+// verify, so this always resolves to `null`; protectedProcedure
+// (server/trpc.ts) is aliased to publicProcedure in this mode, so no
+// procedure actually depends on this returning anything else.
+export async function verifyIdentity(_request: Request, _env: unknown): Promise<Identity | null> {
+  return null;
+}

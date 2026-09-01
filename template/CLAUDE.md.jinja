@@ -11,7 +11,7 @@ touches this codebase day to day.
 - Owner: **{{ owner }}** (see `CODEOWNERS`)
 - Framework: **vite** (all generated apps are vite -- no other flavor)
 - Data source: **{{ data_source }}**
-- Auth: **{{ auth }}**
+- Auth: **{{ auth }}**{% if auth == "none" %} — **public, no sign-in at all.** Don't add a login flow "to be safe" without asking first; `auth: none` was a deliberate choice, not a gap.{% endif %}
 {%- if enable_i18n %}
 - i18n: enabled
 {%- endif %}

@@ -30,11 +30,12 @@ data_source:
 
 auth:
   type: str
-  help: "How do users sign in? cloudflare-access = zero app code, gate the route in the CF dashboard (simplest, recommended default for internal tools)."
+  help: "How do users sign in? cloudflare-access = zero app code, gate the route in the CF dashboard (simplest, recommended default for internal tools). none = no sign-in at all, anyone with the URL has full access -- only pick this for something genuinely meant to be public."
   choices:
     clerk: clerk
     google-oauth: google-oauth
     cloudflare-access: cloudflare-access
+    "none (public -- no login, anyone with the URL gets full access)": none
   default: cloudflare-access
 
 enable_i18n:

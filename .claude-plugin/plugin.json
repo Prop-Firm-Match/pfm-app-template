@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "pfm-app-template",
   "displayName": "PFM app template",
-  "version": "0.2.5",
+  "version": "0.3.0",
   "description": "Generate new internal Prop Firm Match apps (Vite + React 19 + Cloudflare Workers + tRPC, pre-wired with auth, a data layer, the PFM design system, and CI), pull template updates into apps already generated from it, or migrate an existing ad-hoc internal tool onto the same stack.",
   "author": {
     "name": "Prop Firm Match Engineering"

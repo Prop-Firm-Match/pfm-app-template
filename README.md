@@ -64,7 +64,7 @@ If you want to pick things yourself:
 | Question | Options | What to pick |
 |---|---|---|
 | Data source | `postgres`, `bigquery`, `google-sheets`, `external-api-only` | Wherever the data already lives. If it just calls an existing internal API, use `external-api-only`. |
-| Login | `clerk`, `google-oauth`, `cloudflare-access` | `cloudflare-access` is simplest — no login code, access controlled in Cloudflare directly. |
+| Login | `clerk`, `google-oauth`, `cloudflare-access`, `none` | `cloudflare-access` is simplest — no login code, access controlled in Cloudflare directly. `none` means no sign-in at all — anyone with the URL has full access; only pick it for something genuinely meant to be public. |
 
 Not sure? `external-api-only` + `cloudflare-access` is a safe default.
 Deploy setup is handled by engineering either way.

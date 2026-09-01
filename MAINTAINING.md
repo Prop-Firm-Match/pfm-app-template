@@ -88,7 +88,7 @@ different working directory.
 | `project_name` | kebab-case string | — | Becomes the CF Worker name and the `{project_name}.propfirmmatch.solutions` route. Must match `^[a-z][a-z0-9-]*$`. |
 | `owner` | email string | — | Human, not a bot/service account. Required — no default. Lands in `CLAUDE.md`, `README.md`, and `.github/CODEOWNERS`. |
 | `data_source` | `postgres`, `bigquery`, `google-sheets`, `external-api-only` | `external-api-only` | Not every app owns a database — pick the one matching where the data actually lives. |
-| `auth` | `clerk`, `google-oauth`, `cloudflare-access` | `cloudflare-access` | `cloudflare-access` = zero app code, gate the route in the CF Zero Trust dashboard. Simplest default for internal tools. |
+| `auth` | `clerk`, `google-oauth`, `cloudflare-access`, `none` | `cloudflare-access` | `cloudflare-access` = zero app code, gate the route in the CF Zero Trust dashboard. Simplest default for internal tools. `none` = no sign-in at all, `protectedProcedure` becomes a no-op (`server/trpc.ts`) — a deliberate choice for something genuinely public, never an inferred default; the skill must say so explicitly before generating. |
 | `enable_i18n` | bool | `false` | |
 | `enable_testing` | bool | `true` | Adds Vitest scaffolding. |
 | `enable_file_storage` | bool | `false` | Adds an R2 client stub. |
@@ -113,7 +113,10 @@ branded top nav (`src/components/nav.tsx`, PFM logo in `public/`), a tRPC
 router (`server/router.ts`, `server/worker.ts`) default-denying by default —
 `protectedProcedure` (`server/trpc.ts`) requires a server-verified identity
 and is what any real data-touching procedure should use; `publicProcedure`
-is the explicit opt-in for routes that genuinely don't need auth — baked-in
+is the explicit opt-in for a single route that genuinely doesn't need auth
+(a health check, say), distinct from `auth=none` (the app-level toggle —
+see the answers table above), which makes `protectedProcedure` itself a
+no-op instead — baked-in
 `.github/workflows/ci.yml` (lint + `format:check` + type-check + test +
 build, plus a `secret-scan` job running gitleaks — see `.gitleaks.toml` for
 the one allowlisted entry, a known fake test fixture, not a real secret),
@@ -178,6 +181,7 @@ resolve them like any merge conflict.
 | `auth=clerk` | `lib/auth/AuthGate.tsx` (ClerkProvider + SignedIn/SignedOut, feeds the session token into `lib/auth/token-store.ts`) + `lib/auth/verify-identity.ts` (server-side, via `@clerk/backend`) |
 | `auth=google-oauth` | `lib/auth/AuthGate.tsx` (Google Identity Services + Workspace-domain check, feeds the ID token into `lib/auth/token-store.ts`) + `lib/auth/verify-identity.ts` (server-side, JWT-verified against Google's JWKS via `jose`) |
 | `auth=cloudflare-access` | `lib/auth/AuthGate.tsx` (passthrough) + `lib/auth/verify-identity.ts` (server-side, `Cf-Access-Jwt-Assertion` verified against Cloudflare's JWKS via `jose` — not just decoded) + a `whoami` tRPC procedure surfacing the verified identity in the nav |
+| `auth=none` | `lib/auth/AuthGate.tsx` (passthrough) + `lib/auth/verify-identity.ts` (always resolves `null`) + `server/trpc.ts`'s `protectedProcedure` is aliased to `publicProcedure` in this mode, so `router.ts` needs no auth-specific branches. No identity system at all — see the README/`CLAUDE.md` warnings this toggle renders. |
 | `enable_testing=true` | `vitest.config.ts`, test-related deps/scripts, a starter `App.test.tsx` |
 | `enable_file_storage=true` | `lib/r2-client.ts` |
 | `enable_storybook=true` | `.storybook/main.ts`, `.storybook/preview.tsx`, `src/components/ui/button.stories.tsx`, `src/components/ui/card.stories.tsx` |
@@ -215,9 +219,9 @@ resolve them like any merge conflict.
   ```
 
   This generates every `data_source × auth × enable_i18n ×
-  enable_testing × enable_file_storage × enable_storybook` combination (192 total as of this
+  enable_testing × enable_file_storage × enable_storybook` combination (256 total as of this
   writing) into a temp dir and exits non-zero on any render error or
-  leftover unrendered `{% %}`/`{{ }}` filename. Last run: **192/192 passed**.
+  leftover unrendered `{% %}`/`{{ }}` filename. Last run: **256/256 passed**.
 
   This also runs automatically in CI (`.github/workflows/test-matrix.yml`)
   on every PR and push to `main` — a red check means a template change

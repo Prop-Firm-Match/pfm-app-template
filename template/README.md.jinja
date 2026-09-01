@@ -2,6 +2,14 @@
 
 Generated from [pfm-app-template](https://github.com/Prop-Firm-Match/pfm-app-template).
 Owner: **{{ owner }}** · Data source: **{{ data_source }}** · Auth: **{{ auth }}**
+{%- if auth == "none" %}
+
+> **⚠ This app is public.** `auth: none` means no sign-in, no identity
+> check, anywhere — anyone with the URL has full access to everything this
+> app does, including any data it reads or writes. That's intentional only
+> if this app is genuinely meant to be public; if that's not what you
+> wanted, regenerate with a real `auth` answer instead.
+{%- endif %}
 
 ## Deploy
 
@@ -65,6 +73,9 @@ Connect to Git → select this repo), not a GitHub Actions deploy job.
 {%- endif %}
 {%- if auth == "cloudflare-access" %}
 | `CF_ACCESS_TEAM_DOMAIN`, `CF_ACCESS_AUD` (vars) | auth=cloudflare-access — also configure the Access policy itself in Zero Trust |
+{%- endif %}
+{%- if auth == "none" %}
+| _(none — this app has no identity system, see the warning above)_ | |
 {%- endif %}
 {%- if enable_file_storage %}
 | `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | enable_file_storage=true |

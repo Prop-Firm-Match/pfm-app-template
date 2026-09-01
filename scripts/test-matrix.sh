@@ -7,7 +7,7 @@ rm -rf "$OUT_BASE"
 mkdir -p "$OUT_BASE"
 
 data_sources=(postgres bigquery google-sheets external-api-only)
-auths=(clerk google-oauth cloudflare-access)
+auths=(clerk google-oauth cloudflare-access none)
 bools=(true false)
 
 total=0

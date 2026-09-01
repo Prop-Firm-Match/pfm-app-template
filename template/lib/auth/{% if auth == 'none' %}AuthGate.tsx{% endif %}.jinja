@@ -1,0 +1,12 @@
+import type { ReactNode } from 'react';
+
+// auth=none -- this app is intentionally public: no provider, no sign-in
+// redirect, no gate. useAuthIdentity() always reports nobody signed in,
+// matching lib/auth/verify-identity.ts's server-side `null`.
+export function AuthGate({ children }: { children: ReactNode }) {
+  return <>{children}</>;
+}
+
+export function useAuthIdentity() {
+  return { email: null };
+}

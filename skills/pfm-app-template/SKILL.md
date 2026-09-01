@@ -74,10 +74,21 @@ doing anything useful.
      `google-sheets`, or `external-api-only` (default — just calls an
      existing internal API/service, no owned datastore).
    - `auth`: `cloudflare-access` (default — simplest, zero login code,
-     right for internal-only tools), `clerk`, or `google-oauth`.
+     right for internal-only tools), `clerk`, `google-oauth`, or `none`
+     (no sign-in at all — see below).
    If the user doesn't specify and nothing in their description implies
    otherwise, use the two defaults above — don't interrogate them with
    both questions when the defaults clearly fit an "internal tool" request.
+
+   **`auth: none` is never an inferred default, only an explicit choice.**
+   Even if a request sounds public ("anyone in the company can see this",
+   "no login needed"), confirm out loud before generating — say plainly
+   that this means *no identity check anywhere, in dev and in production,
+   forever until someone regenerates with a real auth answer* — anyone who
+   gets the URL has full access, not just "no login screen." Only proceed
+   with `none` after that's been said and the user still wants it; if
+   they're unsure, `cloudflare-access` is the safer default that still
+   needs zero app code.
 4. Ask if a destination repo already exists (e.g. `Prop-Firm-Match/<project_name>`
    on GitHub, created by a dev on request — the common case for a non-dev
    requester who doesn't have repo-creation rights). Two paths:

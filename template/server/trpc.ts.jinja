@@ -1,4 +1,4 @@
-import { initTRPC, TRPCError } from '@trpc/server';
+import { initTRPC{% if auth != "none" %}, TRPCError{% endif %} } from '@trpc/server';
 import superjson from 'superjson';
 
 export interface Identity {
@@ -48,6 +48,14 @@ const t = initTRPC.context<Context>().create({
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+{%- if auth == "none" %}
+// auth=none -- this app is intentionally public, no identity system at
+// all (see lib/auth/verify-identity.ts, which always resolves to `null`).
+// protectedProcedure is just publicProcedure under the name router.ts
+// already uses, so switching an app off auth=none later is a one-line
+// diff back to the real check below, not a router.ts rewrite.
+export const protectedProcedure = t.procedure;
+{%- else %}
 // Default-deny: any procedure touching real data should use this, not
 // publicProcedure, unless it's genuinely meant to be public.
 export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
@@ -56,3 +64,4 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
   }
   return next({ ctx: { ...ctx, identity: ctx.identity } });
 });
+{%- endif %}
