@@ -14,9 +14,9 @@ const ExampleChart = lazy(() =>
 function AppContent() {
   return (
     <>
-      <Nav appName="{{ project_name }}" />
+      <Nav appName="{{ project_name | replace("-", " ") | title }}" />
       <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-        <h1 className="font-serif text-2xl font-semibold text-foreground">{{ project_name }}</h1>
+        <h1 className="font-serif text-2xl font-semibold text-foreground">{{ project_name | replace("-", " ") | title }}</h1>
         <p className="text-foreground-secondary">
           On-brand Prop Firm Match internal tool, generated from pfm-app-template.
         </p>
