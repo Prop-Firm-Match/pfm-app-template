@@ -36,9 +36,11 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      # No `version:` here on purpose. action-setup@v6 errors out with
+      # "Multiple versions of pnpm specified" when the version is given
+      # both here and as "packageManager" in package.json, which this
+      # template always generates. package.json is the single source.
       - uses: pnpm/action-setup@v6
-        with:
-          version: 10
       - uses: actions/setup-node@v5
         with:
           node-version-file: .node-version
