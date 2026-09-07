@@ -118,8 +118,11 @@ is the explicit opt-in for a single route that genuinely doesn't need auth
 see the answers table above), which makes `protectedProcedure` itself a
 no-op instead — baked-in
 `.github/workflows/ci.yml` (lint + `format:check` + type-check + test +
-build, plus a `secret-scan` job running gitleaks — see `.gitleaks.toml` for
-the one allowlisted entry, a known fake test fixture, not a real secret),
+build, plus a `secret-scan` job running the gitleaks CLI — see
+`.gitleaks.toml` for the one allowlisted entry, a known fake test fixture,
+not a real secret. The job installs the pinned gitleaks binary rather than
+using `gitleaks/gitleaks-action`, which requires a paid `GITLEAKS_LICENSE`
+for org-owned repos and fails the job without one),
 a `.env.example` + `docker-compose.yml` (postgres) local-dev story, a
 `.github/CODEOWNERS` naming the `owner` answer, and a generated `CLAUDE.md`
 (agent working-rules for that specific app, scoped to the answers picked —
