@@ -1,3 +1,5 @@
+'use client';
+
 import { useEffect, type ReactNode } from 'react';
 import {
   ClerkProvider,
@@ -10,7 +12,14 @@ import {
 
 import { setTokenGetter } from './token-store';
 
+{%- if deploy_target == "vercel" %}
+// NEXT_PUBLIC_ -- Next.js only inlines env vars into the client bundle
+// under this prefix (mirrors Vite's VITE_ convention for the other
+// deploy_target).
+const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY as string;
+{%- else %}
 const publishableKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string;
+{%- endif %}
 
 function TokenBridge() {
   const { getToken } = useAuth();

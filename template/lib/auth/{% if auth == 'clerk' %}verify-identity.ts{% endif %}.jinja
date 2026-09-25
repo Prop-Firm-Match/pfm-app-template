@@ -2,16 +2,22 @@ import { createClerkClient, verifyToken } from '@clerk/backend';
 
 import type { Identity } from '../../server/trpc';
 
+{%- if deploy_target == "cloudflare-workers" %}
 interface Env {
   CLERK_SECRET_KEY?: string;
 }
+{%- endif %}
 
+{%- if deploy_target == "cloudflare-workers" %}
 export async function verifyIdentity(request: Request, env: Env): Promise<Identity | null> {
+{%- else %}
+export async function verifyIdentity(request: Request): Promise<Identity | null> {
+{%- endif %}
   const header = request.headers.get('Authorization');
   const token = header?.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return null;
 
-  const secretKey = env.CLERK_SECRET_KEY;
+  const secretKey = {% if deploy_target == "cloudflare-workers" %}env.CLERK_SECRET_KEY{% else %}process.env.CLERK_SECRET_KEY{% endif %};
   if (!secretKey) return null;
 
   try {

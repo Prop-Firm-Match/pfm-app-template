@@ -1,3 +1,5 @@
+'use client';
+
 // Trimmed vendored version of propfirm's packages/ui/src/components/ui/data-table.tsx —
 // dropped drag-and-drop reordering (@dnd-kit) and i18n (react-i18next), which
 // are overkill for a lean starter. Core sortable, column-driven table only.

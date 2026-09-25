@@ -1,3 +1,5 @@
+'use client';
+
 // Vendored/trimmed from propfirm's packages/ui card pattern: dark surface,
 // 1px border, matches the "firm row / offer card" anatomy from the brand skill.
 import * as React from 'react';

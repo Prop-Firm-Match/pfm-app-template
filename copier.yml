@@ -18,6 +18,14 @@ owner:
     owner must be a real email address (e.g. name@propfirmmatch.com)
     {% endif %}
 
+deploy_target:
+  type: str
+  help: "Where does this app run? cloudflare-workers = Vite SPA + tRPC API in one Cloudflare Worker (current default -- Hyperdrive/R2/CF Access all assume this). vercel = Next.js App Router on Vercel, tRPC as a Vercel Function -- no Hyperdrive/R2/CF Access equivalent yet, see MAINTAINING.md's Known gaps before picking it for anything that needs those."
+  choices:
+    cloudflare-workers: cloudflare-workers
+    vercel: vercel
+  default: cloudflare-workers
+
 data_source:
   type: str
   help: "Where does this app's data come from?"
@@ -30,13 +38,19 @@ data_source:
 
 auth:
   type: str
-  help: "How do users sign in? cloudflare-access = zero app code, gate the route in the CF dashboard (simplest, recommended default for internal tools). none = no sign-in at all, anyone with the URL has full access -- only pick this for something genuinely meant to be public."
+  help: "How do users sign in? cloudflare-access = zero app code, gate the route in the CF dashboard (simplest, recommended default for internal tools, deploy_target=cloudflare-workers only). none = no sign-in at all, anyone with the URL has full access -- only pick this for something genuinely meant to be public."
   choices:
     clerk: clerk
     google-oauth: google-oauth
     cloudflare-access: cloudflare-access
     "none (public -- no login, anyone with the URL gets full access)": none
   default: cloudflare-access
+  validator: >-
+    {% if auth == "cloudflare-access" and deploy_target == "vercel" %}
+    auth=cloudflare-access needs deploy_target=cloudflare-workers -- Cloudflare
+    Access gates traffic at Cloudflare's edge, which a Vercel-hosted domain
+    doesn't pass through. Pick clerk, google-oauth, or none instead.
+    {% endif %}
 
 enable_i18n:
   type: bool
@@ -50,8 +64,14 @@ enable_testing:
 
 enable_file_storage:
   type: bool
-  help: "Add R2 file-upload scaffolding?"
+  help: "Add R2 file-upload scaffolding? (deploy_target=cloudflare-workers only -- no Vercel-equivalent scaffolding yet.)"
   default: false
+  validator: >-
+    {% if enable_file_storage and deploy_target == "vercel" %}
+    enable_file_storage needs deploy_target=cloudflare-workers -- R2 is a
+    Cloudflare binding, not available to a Vercel deploy. See
+    MAINTAINING.md's Known gaps.
+    {% endif %}
 
 enable_storybook:
   type: bool

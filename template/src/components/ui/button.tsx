@@ -1,3 +1,5 @@
+'use client';
+
 // Trimmed vendored copy of propfirm's packages/ui/src/components/ui/button.tsx —
 // core variants only (default/secondary/outline/destructive/ghost/link + the
 // brand pfmGradient CTA). ~20 campaign-specific gradient variants

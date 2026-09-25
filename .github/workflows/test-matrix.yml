@@ -33,4 +33,4 @@ jobs:
 
       - run: pip install copier
 
-      - run: copier copy --data project_name=windows-guard --data owner="ci@propfirmmatch.com" --data framework=vite --data data_source=postgres --data auth=cloudflare-access --data enable_i18n=false --data enable_file_storage=false --data enable_testing=true --data enable_storybook=false --defaults . "$env:RUNNER_TEMP\windows-guard"
+      - run: copier copy --data project_name=windows-guard --data owner="ci@propfirmmatch.com" --data deploy_target=cloudflare-workers --data data_source=postgres --data auth=cloudflare-access --data enable_i18n=false --data enable_file_storage=false --data enable_testing=true --data enable_storybook=false --defaults . "$env:RUNNER_TEMP\windows-guard"

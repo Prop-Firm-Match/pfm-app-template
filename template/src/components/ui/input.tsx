@@ -1,3 +1,5 @@
+'use client';
+
 // Trimmed vendored copy of propfirm's packages/ui/src/components/ui/input.tsx —
 // dropped the dynamic left/right inner-content padding measurement and the
 // clearable/loading affordances (need extra icon components we don't vendor).

@@ -1,0 +1,7 @@
+# README/CLAUDE.md tables get {{ project_name }}-padded column widths at
+# generation time, so there's no single byte-for-byte Prettier-clean
+# version to keep in the template source (same reasoning as the
+# cloudflare-workers flavor's oxfmt ignorePatterns).
+**/*.md
+pnpm-lock.yaml
+drizzle/**

@@ -5,6 +5,7 @@ export interface Identity {
   email: string;
 }
 
+{%- if deploy_target == "cloudflare-workers" %}
 // The Worker's env bindings/secrets -- see wrangler.jsonc for what's
 // declared, README "Secrets" for what's set where. Threaded through Context
 // so data-source clients (lib/db/client.ts, lib/data/*) get real bindings
@@ -31,10 +32,13 @@ export interface Env {
   GOOGLE_WORKSPACE_DOMAIN?: string;
 {%- endif %}
 }
+{%- endif %}
 
 export interface Context {
   request: Request;
+{%- if deploy_target == "cloudflare-workers" %}
   env: Env;
+{%- endif %}
   // Server-verified identity for this request (see lib/auth/verify-identity),
   // null when unauthenticated. Never trust a client-supplied header/claim
   // directly in a procedure -- this is the one place identity is trusted.

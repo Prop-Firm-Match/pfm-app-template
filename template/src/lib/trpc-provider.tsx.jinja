@@ -1,3 +1,5 @@
+'use client';
+
 import { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { httpBatchLink } from '@trpc/client';
@@ -8,9 +10,15 @@ import { trpc } from './trpc';
 import { getAuthToken } from '../../lib/auth/token-store';
 {%- endif %}
 
+{%- if deploy_target == "vercel" %}
+// Same-origin: this app's tRPC endpoint is a Next.js Route Handler in the
+// same deployment (see app/api/trpc/[trpc]/route.ts + server/router.ts).
+const TRPC_URL = '/api/trpc';
+{%- else %}
 // Same-origin: this app's tRPC endpoint runs in the same Worker as the
 // frontend (see server/router.ts + server/worker.ts).
 const TRPC_URL = '/trpc';
+{%- endif %}
 
 export function TRPCProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => new QueryClient());

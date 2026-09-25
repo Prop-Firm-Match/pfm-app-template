@@ -21,26 +21,49 @@ export const appRouter = router({
 {%- if data_source == "postgres" %}
   // Example: list rows from the `examples` table (lib/db/schema.ts). Replace
   // with your app's real tables once you've defined them.
+{%- if deploy_target == "cloudflare-workers" %}
   listExamples: protectedProcedure.query(async ({ ctx }) => {
     const db = getDb(ctx.env);
     return db.select().from(examples).limit(20);
   }),
+{%- else %}
+  listExamples: protectedProcedure.query(async () => {
+    const db = getDb();
+    return db.select().from(examples).limit(20);
+  }),
+{%- endif %}
 {%- elif data_source == "bigquery" %}
   // Stub — fill in your project's dataset/table. No real schema is known at
   // generation time (see the template's known-gaps notes).
+{%- if deploy_target == "cloudflare-workers" %}
   listExamples: protectedProcedure.query(async ({ ctx }) => {
     const client = getBigQueryClient(ctx.env);
     void client; // remove once you wire a real query
     return [] as Array<{ id: string }>;
   }),
+{%- else %}
+  listExamples: protectedProcedure.query(async () => {
+    const client = getBigQueryClient();
+    void client; // remove once you wire a real query
+    return [] as Array<{ id: string }>;
+  }),
+{%- endif %}
 {%- elif data_source == "google-sheets" %}
   // Stub — fill in your spreadsheet ID/range. No real schema is known at
   // generation time (see the template's known-gaps notes).
+{%- if deploy_target == "cloudflare-workers" %}
   listExamples: protectedProcedure.query(async ({ ctx }) => {
     const client = await getSheetsClient(ctx.env);
     void client; // remove once you wire a real query
     return [] as Array<{ id: string }>;
   }),
+{%- else %}
+  listExamples: protectedProcedure.query(async () => {
+    const client = await getSheetsClient();
+    void client; // remove once you wire a real query
+    return [] as Array<{ id: string }>;
+  }),
+{%- endif %}
 {%- else %}
   // external-api-only — proxy or call your existing internal API here.
   // Example shape kept minimal since the API's actual contract isn't known

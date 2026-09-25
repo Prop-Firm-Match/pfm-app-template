@@ -1,4 +1,8 @@
+{%- if deploy_target == "vercel" %}
+import type { StorybookConfig } from '@storybook/nextjs';
+{%- else %}
 import type { StorybookConfig } from '@storybook/react-vite';
+{%- endif %}
 
 const config: StorybookConfig = {
   // Storybook 10 folds the former "essentials" addons (controls, actions,
@@ -6,7 +10,11 @@ const config: StorybookConfig = {
   // package needed anymore.
   stories: ['../src/components/ui/**/*.stories.tsx'],
   framework: {
+{%- if deploy_target == "vercel" %}
+    name: '@storybook/nextjs',
+{%- else %}
     name: '@storybook/react-vite',
+{%- endif %}
     options: {},
   },
 };

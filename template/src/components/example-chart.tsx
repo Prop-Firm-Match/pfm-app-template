@@ -1,3 +1,5 @@
+'use client';
+
 // Example chart wiring for `src/components/ui/chart.tsx`. Static sample data --
 // swap `data` for a real `trpc.listExamples.useQuery()` result once you have
 // one. Colors are the validated pink+blue pair (see dataviz skill/CHANGELOG:

@@ -37,10 +37,13 @@ everything the skill itself does too, on macOS and Windows alike).
 
 ## Use it
 
-Every generated app is a Vite + React SPA on Cloudflare Workers (see
-[Known gaps](MAINTAINING.md#known-gaps) if you need SSR/SEO — that's not
-what this template is for). Just ask Claude Code, in plain language.
-Naming a stack explicitly:
+Every generated app defaults to a Vite + React SPA on Cloudflare Workers.
+Say "deploy to Vercel" (or just mention Vercel) and it generates a Next.js
+App Router app instead — same design system, same tRPC API shape, own
+toolchain (see [Known gaps](MAINTAINING.md#known-gaps) for what's not
+carried over to that flavor yet: no CF-Access-equivalent auth, no R2
+equivalent). Just ask Claude Code, in plain language. Naming a stack
+explicitly:
 
 > Make me a new app from pfm-app-template called loyalty-ops-tool. It's a
 > simple internal dashboard, connects to our existing internal API, gated
@@ -63,8 +66,9 @@ If you want to pick things yourself:
 
 | Question | Options | What to pick |
 |---|---|---|
+| Deploy target | `cloudflare-workers`, `vercel` | `cloudflare-workers` (default) unless you specifically want Vercel. `vercel` can't combine with `auth=cloudflare-access` or file storage — see [Known gaps](MAINTAINING.md#known-gaps). |
 | Data source | `postgres`, `bigquery`, `google-sheets`, `external-api-only` | Wherever the data already lives. If it just calls an existing internal API, use `external-api-only`. |
-| Login | `clerk`, `google-oauth`, `cloudflare-access`, `none` | `cloudflare-access` is simplest — no login code, access controlled in Cloudflare directly. `none` means no sign-in at all — anyone with the URL has full access; only pick it for something genuinely meant to be public. |
+| Login | `clerk`, `google-oauth`, `cloudflare-access`, `none` | `cloudflare-access` is simplest — no login code, access controlled in Cloudflare directly (Cloudflare deploy target only). `none` means no sign-in at all — anyone with the URL has full access; only pick it for something genuinely meant to be public. |
 
 Not sure? `external-api-only` + `cloudflare-access` is a safe default.
 Deploy setup is handled by engineering either way.

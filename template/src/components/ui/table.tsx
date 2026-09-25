@@ -1,3 +1,5 @@
+'use client';
+
 // Vendored verbatim (semantic wrapper) from propfirm's
 // packages/ui/src/components/ui/table.tsx
 import * as React from 'react';

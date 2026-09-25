@@ -1,7 +1,7 @@
 # {{ project_name }}
 
 Generated from [pfm-app-template](https://github.com/Prop-Firm-Match/pfm-app-template).
-Owner: **{{ owner }}** · Data source: **{{ data_source }}** · Auth: **{{ auth }}**
+Owner: **{{ owner }}** · Deploy target: **{{ deploy_target }}** · Data source: **{{ data_source }}** · Auth: **{{ auth }}**
 {%- if auth == "none" %}
 
 > **⚠ This app is public.** `auth: none` means no sign-in, no identity
@@ -12,6 +12,20 @@ Owner: **{{ owner }}** · Data source: **{{ data_source }}** · Auth: **{{ auth 
 {%- endif %}
 
 ## Deploy
+{%- if deploy_target == "vercel" %}
+
+Deploy is via the **Vercel dashboard** (Add New → Project → import this
+repo's Git connection), not a GitHub Actions deploy job.
+
+1. Import this repo in the Vercel dashboard. Vercel auto-detects Next.js —
+   no build command override needed.
+2. Set the vars/secrets listed below in the Vercel dashboard (Project →
+   Settings → Environment Variables) for the Production environment, and
+   again for Preview if you want preview deployments to work too.
+3. Deploy. Route: whatever domain Vercel assigns or you attach in Project →
+   Settings → Domains — this template doesn't hardcode one the way the
+   `cloudflare-workers` flavor does with `*.propfirmmatch.solutions`.
+{%- else %}
 
 Deploy is via **Cloudflare Workers Builds** (CF dashboard → Workers & Pages →
 Connect to Git → select this repo), not a GitHub Actions deploy job.
@@ -38,6 +52,7 @@ Connect to Git → select this repo), not a GitHub Actions deploy job.
    `REPLACE_WITH_*` placeholder.
 {{ "4" if data_source == "postgres" else "3" }}. Set the vars/secrets listed below in the CF dashboard for this Worker.
 {{ "5" if data_source == "postgres" else "4" }}. Route: `{{ project_name }}.propfirmmatch.solutions`.
+{%- endif %}
 
 ## Secrets
 
@@ -52,6 +67,30 @@ Connect to Git → select this repo), not a GitHub Actions deploy job.
 | _(none required by default)_ | |
 {%- endif %}
 
+{%- if deploy_target == "vercel" %}
+**Vercel dashboard vars/secrets** (deploy-scope — set when connecting the repo):
+
+| Var/Secret | Needed when |
+|---|---|
+{%- if data_source == "postgres" %}
+| `DATABASE_CONNECTION_STRING` | data_source=postgres — read directly by the running app (`lib/db/client.ts`) and by `drizzle-kit`, same value for both |
+{%- endif %}
+{%- if data_source == "bigquery" %}
+| `BIGQUERY_PROJECT_ID`, `BIGQUERY_SERVICE_ACCOUNT_JSON` | data_source=bigquery |
+{%- endif %}
+{%- if data_source == "google-sheets" %}
+| `GOOGLE_SHEETS_CLIENT_EMAIL`, `GOOGLE_SHEETS_PRIVATE_KEY` | data_source=google-sheets |
+{%- endif %}
+{%- if auth == "clerk" %}
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` (public), `CLERK_SECRET_KEY` (secret) | auth=clerk |
+{%- endif %}
+{%- if auth == "google-oauth" %}
+| `NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID`, `NEXT_PUBLIC_GOOGLE_WORKSPACE_DOMAIN` (public), `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_WORKSPACE_DOMAIN` (secret-scope copies used server-side) | auth=google-oauth |
+{%- endif %}
+{%- if auth == "none" %}
+| _(none — this app has no identity system, see the warning above)_ | |
+{%- endif %}
+{%- else %}
 **Cloudflare dashboard vars/secrets** (deploy-scope — set when connecting the repo):
 
 | Var/Secret | Needed when |
@@ -80,6 +119,7 @@ Connect to Git → select this repo), not a GitHub Actions deploy job.
 {%- if enable_file_storage %}
 | `R2_ENDPOINT`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY` | enable_file_storage=true |
 {%- endif %}
+{%- endif %}
 
 ## Local development
 
@@ -103,9 +143,15 @@ on a fresh clone. `drizzle/` is real app state (an append-only history
 never touched again by `copier update`.
 {%- endif %}
 
+{%- if deploy_target == "vercel" %}
+`pnpm dev` runs the frontend and the tRPC API (`server/router.ts`, mounted
+as a Next.js Route Handler at `app/api/trpc/[trpc]/route.ts`) together in
+one `next dev` process.
+{%- else %}
 `pnpm dev` runs the frontend and the tRPC API (`server/router.ts`) together
 in one process via `@cloudflare/vite-plugin` — no separate `wrangler dev`
 needed.
+{%- endif %}
 
 **Windows:** `corepack enable pnpm` needs an elevated (Run as Administrator)
 shell — it writes shims next to the Node install in `C:\Program Files\nodejs`,
@@ -115,7 +161,7 @@ same version `package.json`'s `packageManager` pins via
 `winget install OpenJS.NodeJS` won't have the exact `.node-version` patch —
 use `winget install OpenJS.NodeJS.LTS --version <version>`, or `fnm`/
 `nvm-windows`, which read `.node-version` directly.
-{%- if data_source == "postgres" %}
+{%- if data_source == "postgres" and deploy_target == "cloudflare-workers" %}
 
 **No Docker?** `docker compose up -d` needs Docker Desktop, which on Windows
 needs WSL2 or Hyper-V. A native Postgres (e.g. `winget install
@@ -129,6 +175,14 @@ else:
 | `hyperdrive[0].localConnectionString` in `wrangler.jsonc` | the dev server, via `@cloudflare/vite-plugin` |
 | `DATABASE_CONNECTION_STRING` in `.env` | `drizzle-kit` (`db:generate`/`db:migrate`) — runs as a Node CLI outside the Worker |
 {%- endif %}
+{%- if data_source == "postgres" and deploy_target == "vercel" %}
+
+**No Docker?** `docker compose up -d` needs Docker Desktop, which on Windows
+needs WSL2 or Hyper-V. A native Postgres (e.g. `winget install
+PostgreSQL.PostgreSQL.17`) works fine — just point `DATABASE_CONNECTION_STRING`
+in `.env` at it; unlike the `cloudflare-workers` flavor, there's only the one
+setting, read by both the running app and `drizzle-kit`.
+{%- endif %}
 
 ## Design system
 
@@ -141,3 +195,15 @@ that's expected; it's how brand-token updates propagate.
 
 No error-tracking integration is included (PostHog was dropped from this
 template's stack; no Sentry equivalent added). Accepted for now.
+{%- if deploy_target == "vercel" %}
+
+`deploy_target=vercel` is newer and narrower than `cloudflare-workers`:
+`auth=cloudflare-access` and `enable_file_storage` (R2) aren't available
+here at all (no Vercel equivalent scaffolded yet — copier refuses those
+combinations). If `data_source=postgres`, `lib/db/client.ts` connects
+directly with a module-level `pg.Pool`; under real traffic, many Vercel
+function instances each holding a pool can exhaust a plain Postgres
+server's connection limit — put a pooler (Neon's serverless driver,
+PgBouncer, Supabase's pooler) in front before this goes beyond light
+internal-tool usage.
+{%- endif %}

@@ -16,8 +16,20 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,
+{%- if deploy_target == "vercel" %}
+    "incremental": true,
+    "plugins": [{ "name": "next" }],
+    "types": ["node"],
+    "allowJs": true
+{%- else %}
     "types": ["vite/client", "@cloudflare/workers-types", "node"]
+{%- endif %}
   },
+{%- if deploy_target == "vercel" %}
+  "include": ["**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
+  "exclude": ["node_modules", ".next"]
+{%- else %}
   "include": ["**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules", "dist"]
+{%- endif %}
 }

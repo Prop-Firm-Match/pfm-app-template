@@ -1,0 +1,19 @@
+import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
+
+import { appRouter } from '../../../../server/router';
+import type { Context } from '../../../../server/trpc';
+import { verifyIdentity } from '../../../../lib/auth/verify-identity';
+
+function handler(request: Request) {
+  return fetchRequestHandler({
+    endpoint: '/api/trpc',
+    req: request,
+    router: appRouter,
+    createContext: async (): Promise<Context> => ({
+      request,
+      identity: await verifyIdentity(request),
+    }),
+  });
+}
+
+export { handler as GET, handler as POST };

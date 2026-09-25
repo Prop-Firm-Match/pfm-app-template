@@ -89,7 +89,11 @@ const shadCnColors = {
 };
 
 export default {
+{%- if deploy_target == "vercel" %}
+  content: ['./app/**/*.{ts,tsx}', './src/**/*.{ts,tsx}'],
+{%- else %}
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+{%- endif %}
   darkMode: 'class',
   theme: {
     colors: {

@@ -1,3 +1,5 @@
+'use client';
+
 // Trimmed vendored copy of propfirm's packages/ui/src/components/ui/select.tsx —
 // dropped the onClear/hideChevron button affordance to keep this to the
 // standard Radix Select wrapper shape.

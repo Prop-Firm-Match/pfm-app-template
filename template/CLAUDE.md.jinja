@@ -9,7 +9,7 @@ touches this codebase day to day.
 ## This app's shape
 
 - Owner: **{{ owner }}** (see `CODEOWNERS`)
-- Framework: **vite** (all generated apps are vite -- no other flavor)
+- Deploy target: **{{ deploy_target }}**{% if deploy_target == "vercel" %} (Next.js App Router){% else %} (Vite SPA + tRPC API in one Cloudflare Worker){% endif %}
 - Data source: **{{ data_source }}**
 - Auth: **{{ auth }}**{% if auth == "none" %} — **public, no sign-in at all.** Don't add a login flow "to be safe" without asking first; `auth: none` was a deliberate choice, not a gap.{% endif %}
 {%- if enable_i18n %}
@@ -22,9 +22,14 @@ touches this codebase day to day.
 - File storage: R2 (`lib/r2-client.ts`)
 {%- endif %}
 
+{%- if deploy_target == "vercel" %}
+Deploys via the Vercel dashboard (Git integration) — not a GitHub Actions
+deploy job. See `README.md` → Deploy.
+{%- else %}
 Deploys as a Cloudflare Worker at `{{ project_name }}.propfirmmatch.solutions`
 via Cloudflare Workers Builds (CF dashboard Git integration) — not a GitHub
 Actions deploy job. See `README.md` → Deploy.
+{%- endif %}
 
 ## Rules
 
@@ -46,8 +51,9 @@ Actions deploy job. See `README.md` → Deploy.
    everything else is copier's own record of the answers above and editing
    it breaks `copier update`.
 4. Secrets: GitHub Secrets are CI-scope only (lint/test). Deploy-time
-   secrets live in the Cloudflare dashboard (see `README.md` → Secrets) —
-   don't add deploy credentials to GitHub Actions for this app.
+   secrets live in the {% if deploy_target == "vercel" %}Vercel{% else %}Cloudflare{% endif %} dashboard
+   (see `README.md` → Secrets) — don't add deploy credentials to GitHub
+   Actions for this app.
 
 ## Pulling a template update
 

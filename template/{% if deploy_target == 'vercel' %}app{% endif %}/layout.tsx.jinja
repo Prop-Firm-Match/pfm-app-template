@@ -1,0 +1,28 @@
+import type { Metadata } from 'next';
+
+import { Providers } from './providers';
+import '../src/styles/globals.css';
+
+export const metadata: Metadata = {
+  title: '{{ project_name | replace("-", " ") | title }}',
+};
+
+// This app always renders per-request identity/data (tRPC, auth state) --
+// never a good static-generation candidate. Force it explicitly: without
+// this, `next build` tries to prerender "/" at build time, and clerk/
+// google-oauth's client-side auth provider throws during that prerender
+// because there's no real publishable key in a build environment (only a
+// deploy-time env var, read at request time, not build time).
+export const dynamic = 'force-dynamic';
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className="dark">
+      <body>
+        <Providers>
+          <div className="flex min-h-screen flex-col">{children}</div>
+        </Providers>
+      </body>
+    </html>
+  );
+}

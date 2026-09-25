@@ -1,3 +1,5 @@
+'use client';
+
 // Vendored verbatim from propfirm's packages/ui/src/components/ui/label.tsx
 import * as React from 'react';
 import * as LabelPrimitive from '@radix-ui/react-label';

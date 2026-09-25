@@ -1,4 +1,8 @@
+{%- if deploy_target == "vercel" -%}
+import { defineConfig } from 'vitest/config';
+{%- else -%}
 import { defineConfig } from 'vite-plus';
+{%- endif %}
 
 export default defineConfig({
   test: {
@@ -8,9 +12,13 @@ export default defineConfig({
     // ClerkProvider throws hard if publishableKey is missing/empty -- this
     // is a syntactically-valid but fake test key (decodes to
     // "clerk.test.example$"), just enough for the provider to mount in
-    // tests. Real apps get the real key from .env/CF dashboard.
+    // tests. Real apps get the real key from .env/{% if deploy_target == "vercel" %}Vercel dashboard{% else %}CF dashboard{% endif %}.
     env: {
+      {%- if deploy_target == "vercel" %}
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: 'pk_test_Y2xlcmsudGVzdC5leGFtcGxlJA==',
+      {%- else %}
       VITE_CLERK_PUBLISHABLE_KEY: 'pk_test_Y2xlcmsudGVzdC5leGFtcGxlJA==',
+      {%- endif %}
     },
     {%- endif %}
   },

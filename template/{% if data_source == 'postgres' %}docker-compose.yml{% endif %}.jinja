@@ -1,7 +1,12 @@
 # data_source=postgres -- local Postgres for `pnpm dev`, matching the
 # DATABASE_CONNECTION_STRING default in .env.example / lib/db/client.ts.
+{%- if deploy_target == "vercel" %}
+# Not used in production: point DATABASE_CONNECTION_STRING at the real
+# Postgres instance in the Vercel dashboard instead.
+{%- else %}
 # Not used in production: Cloudflare Hyperdrive (wrangler.jsonc) proxies to
 # the real AWS-hosted Postgres there.
+{%- endif %}
 services:
   postgres:
     image: postgres:17-alpine

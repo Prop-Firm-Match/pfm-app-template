@@ -1,3 +1,5 @@
+'use client';
+
 // Simplified top-bar nav -- support-dashboard's real nav
 // (apps/support-dashboard/src/modules/sidebar/components/app-sidebar.tsx) is a
 // full collapsible sidebar with org switcher/RBAC, which needs react-router +

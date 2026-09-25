@@ -1,3 +1,5 @@
+'use client';
+
 // Trimmed vendored copy of propfirm's packages/ui/src/components/ui/chart.tsx
 // (shadcn's recharts wrapper) -- kept Container + Tooltip, dropped Legend for
 // this lean starter (add it back from propfirm's source if you need it).

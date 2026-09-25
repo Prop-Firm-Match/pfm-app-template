@@ -1,4 +1,8 @@
+{%- if deploy_target == "vercel" %}
+import type { Preview } from '@storybook/nextjs';
+{%- else %}
 import type { Preview } from '@storybook/react-vite';
+{%- endif %}
 import '../src/styles/globals.css';
 
 // PFM is dark-by-default -- match the real app shell so components preview

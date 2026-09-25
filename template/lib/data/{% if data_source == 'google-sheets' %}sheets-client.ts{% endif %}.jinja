@@ -69,6 +69,7 @@ export interface SheetsClient {
   batchGet(spreadsheetId: string, ranges: string[]): Promise<string[][][]>;
 }
 
+{%- if deploy_target == "cloudflare-workers" %}
 interface Env {
   GOOGLE_SHEETS_CLIENT_EMAIL?: string;
   GOOGLE_SHEETS_PRIVATE_KEY?: string;
@@ -80,6 +81,13 @@ interface Env {
 export async function getSheetsClient(env: Env): Promise<SheetsClient> {
   const clientEmail = env.GOOGLE_SHEETS_CLIENT_EMAIL ?? '';
   const privateKey = (env.GOOGLE_SHEETS_PRIVATE_KEY ?? '').replace(/\\n/g, '\n');
+{%- else %}
+// process.env, not an env binding -- Vercel populates it from
+// dashboard-configured env vars directly (see README "Secrets").
+export async function getSheetsClient(): Promise<SheetsClient> {
+  const clientEmail = process.env.GOOGLE_SHEETS_CLIENT_EMAIL ?? '';
+  const privateKey = (process.env.GOOGLE_SHEETS_PRIVATE_KEY ?? '').replace(/\\n/g, '\n');
+{%- endif %}
   const token = await fetchAccessToken(clientEmail, privateKey);
 
   return {

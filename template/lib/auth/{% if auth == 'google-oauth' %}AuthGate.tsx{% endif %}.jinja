@@ -3,12 +3,22 @@
 // UI-level early-exit -- the raw credential is also handed to token-store so
 // server/protectedProcedure calls can verify it for real (see
 // lib/auth/verify-identity).
+'use client';
+
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 
 import { setTokenGetter } from './token-store';
 
+{%- if deploy_target == "vercel" %}
+// NEXT_PUBLIC_ -- Next.js only inlines env vars into the client bundle
+// under this prefix (mirrors Vite's VITE_ convention for the other
+// deploy_target).
+const clientId = process.env.NEXT_PUBLIC_GOOGLE_OAUTH_CLIENT_ID as string;
+const allowedDomain = process.env.NEXT_PUBLIC_GOOGLE_WORKSPACE_DOMAIN as string;
+{%- else %}
 const clientId = import.meta.env.VITE_GOOGLE_OAUTH_CLIENT_ID as string;
 const allowedDomain = import.meta.env.VITE_GOOGLE_WORKSPACE_DOMAIN as string;
+{%- endif %}
 
 interface GoogleIdentity {
   email: string;

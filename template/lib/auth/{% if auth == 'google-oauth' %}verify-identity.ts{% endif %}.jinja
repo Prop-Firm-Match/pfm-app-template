@@ -2,20 +2,26 @@ import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 import type { Identity } from '../../server/trpc';
 
+{%- if deploy_target == "cloudflare-workers" %}
 interface Env {
   GOOGLE_OAUTH_CLIENT_ID?: string;
   GOOGLE_WORKSPACE_DOMAIN?: string;
 }
+{%- endif %}
 
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
+{%- if deploy_target == "cloudflare-workers" %}
 export async function verifyIdentity(request: Request, env: Env): Promise<Identity | null> {
+{%- else %}
+export async function verifyIdentity(request: Request): Promise<Identity | null> {
+{%- endif %}
   const header = request.headers.get('Authorization');
   const idToken = header?.startsWith('Bearer ') ? header.slice(7) : null;
   if (!idToken) return null;
 
-  const clientId = env.GOOGLE_OAUTH_CLIENT_ID;
-  const workspaceDomain = env.GOOGLE_WORKSPACE_DOMAIN;
+  const clientId = {% if deploy_target == "cloudflare-workers" %}env.GOOGLE_OAUTH_CLIENT_ID{% else %}process.env.GOOGLE_OAUTH_CLIENT_ID{% endif %};
+  const workspaceDomain = {% if deploy_target == "cloudflare-workers" %}env.GOOGLE_WORKSPACE_DOMAIN{% else %}process.env.GOOGLE_WORKSPACE_DOMAIN{% endif %};
   if (!clientId || !workspaceDomain) return null;
 
   jwks ??= createRemoteJWKSet(new URL('https://www.googleapis.com/oauth2/v3/certs'));

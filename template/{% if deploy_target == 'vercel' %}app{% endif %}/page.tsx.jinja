@@ -1,0 +1,27 @@
+import { Suspense } from 'react';
+
+import { Button } from '../src/components/ui/button';
+import { Nav } from '../src/components/nav';
+import { ExampleChart } from '../src/components/example-chart';
+
+export default function Home() {
+  return (
+    <>
+      <Nav appName="{{ project_name | replace("-", " ") | title }}" />
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
+        <h1 className="font-serif text-2xl font-semibold text-foreground">{{ project_name | replace("-", " ") | title }}</h1>
+        <p className="text-foreground-secondary">
+          On-brand Prop Firm Match internal tool, generated from pfm-app-template.
+        </p>
+        <Button variant="pfmGradient" rounded="full">
+          Primary Action
+        </Button>
+        <div className="w-full max-w-lg">
+          <Suspense fallback={null}>
+            <ExampleChart />
+          </Suspense>
+        </div>
+      </div>
+    </>
+  );
+}

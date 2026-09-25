@@ -1,0 +1,26 @@
+// data_source=postgres, deploy_target=vercel — Drizzle client over
+// node-postgres, reading DATABASE_CONNECTION_STRING from process.env
+// (Vercel populates it from dashboard-configured env vars, unlike
+// Cloudflare Workers). A module-level Pool singleton is the *correct*
+// pattern here, not a bug: unlike a Workers isolate, a warm Vercel Node.js
+// function instance persists between invocations and is meant to reuse
+// connections across them.
+//
+// Known gap: many short-lived function instances each holding their own
+// Pool can exhaust a plain Postgres server's max_connections under real
+// traffic. For anything beyond light internal-tool usage, put a pooler in
+// front (Neon's serverless driver, PgBouncer, Supabase's pooler, etc.)
+// instead of connecting directly -- see MAINTAINING.md's Known gaps.
+import { drizzle } from 'drizzle-orm/node-postgres';
+import { Pool } from 'pg';
+
+import * as schema from './schema';
+
+let db: ReturnType<typeof drizzle> | undefined;
+
+export function getDb() {
+  db ??= drizzle(new Pool({ connectionString: process.env.DATABASE_CONNECTION_STRING, max: 5 }), {
+    schema,
+  });
+  return db;
+}

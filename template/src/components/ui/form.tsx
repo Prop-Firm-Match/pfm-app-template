@@ -1,3 +1,5 @@
+'use client';
+
 // Trimmed vendored copy of propfirm's packages/ui/src/components/ui/form.tsx —
 // standard shadcn react-hook-form wrapper. Dropped the ScopedFieldStateProvider
 // perf-optimization path (only matters on very large forms).

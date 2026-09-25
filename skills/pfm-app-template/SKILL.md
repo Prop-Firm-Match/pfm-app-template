@@ -67,9 +67,14 @@ doing anything useful.
    to the requester's own email if they're clearly the one who'll maintain
    it, but confirm rather than assume for someone else). Required — copier
    has no default for this question, so it must be collected before step 4.
-3. Infer the two main answers from what the user describes, and only ask
-   if genuinely ambiguous (every generated app is Vite + React on
-   Cloudflare Workers — there's no framework choice to make):
+3. Infer the main answers from what the user describes, and only ask if
+   genuinely ambiguous:
+   - `deploy_target`: `cloudflare-workers` (default — Vite SPA + tRPC API
+     in one Worker) unless the user names Vercel/Next.js, or the request
+     otherwise makes clear they want Vercel specifically — then
+     `vercel` (Next.js App Router, tRPC as a Route Handler). Don't ask
+     this one explicitly for an ordinary internal-tool request; only act
+     on it when the user actually said "Vercel" or "Next.js" in some form.
    - `data_source`: `postgres` (owns its own database), `bigquery`,
      `google-sheets`, or `external-api-only` (default — just calls an
      existing internal API/service, no owned datastore).
@@ -77,8 +82,16 @@ doing anything useful.
      right for internal-only tools), `clerk`, `google-oauth`, or `none`
      (no sign-in at all — see below).
    If the user doesn't specify and nothing in their description implies
-   otherwise, use the two defaults above — don't interrogate them with
-   both questions when the defaults clearly fit an "internal tool" request.
+   otherwise, use the defaults above — don't interrogate them with every
+   question when the defaults clearly fit an "internal tool" request.
+
+   **`deploy_target=vercel` narrows what else is available.**
+   `auth=cloudflare-access` and file storage (R2) don't exist for it —
+   copier's own validators refuse those combinations outright. If the
+   user asks for Vercel *and* Cloudflare Access (or R2) in the same
+   request, say so before generating and ask which one actually matters
+   more here, rather than letting `copier copy` fail on a validator error
+   they won't have context for.
 
    **`auth: none` is never an inferred default, only an explicit choice.**
    Even if a request sounds public ("anyone in the company can see this",
@@ -108,6 +121,7 @@ doing anything useful.
      --vcs-ref=HEAD \
      --data project_name=<project_name> \
      --data owner=<owner> \
+     --data deploy_target=<deploy_target> \
      --data data_source=<data_source> \
      --data auth=<auth> \
      --data enable_i18n=false \
@@ -174,10 +188,13 @@ below rather than pushing straight through on assumptions the way
 Workflows 1/2 can.
 
 1. **Understand the existing app before touching anything:**
-   - Its current stack (read `package.json`, entry points, framework). If
-     it's not already Vite + React, moving it onto this template means a
-     real framework migration (e.g. off Next.js/Remix/CRA), not just a
-     restyle — say so explicitly, it's a bigger lift than the other steps.
+   - Its current stack (read `package.json`, entry points, framework). An
+     existing Next.js App Router app can land on `deploy_target=vercel`
+     without a framework migration — everything else (Remix, CRA, Pages
+     Router, anything not React) means a real framework migration onto
+     Vite + React (`deploy_target=cloudflare-workers`) or Next.js App
+     Router, not just a restyle — say so explicitly, it's a bigger lift
+     than the other steps.
    - What it actually does — the main user-facing flows, well enough to
      know what "still works" means after migrating.
    - Its data layer: does it own a database (which kind?), or call an

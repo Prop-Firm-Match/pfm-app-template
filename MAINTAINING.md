@@ -66,6 +66,7 @@ copier copy https://github.com/Prop-Firm-Match/pfm-app-template.git ./my-new-app
   --vcs-ref=HEAD \
   --data project_name=my-new-app \
   --data owner=you@propfirmmatch.com \
+  --data deploy_target=cloudflare-workers \
   --data data_source=external-api-only \
   --data auth=cloudflare-access \
   --data enable_i18n=false \
@@ -85,13 +86,14 @@ different working directory.
 
 | Key | Choices | Default | Notes |
 |---|---|---|---|
-| `project_name` | kebab-case string | — | Becomes the CF Worker name and the `{project_name}.propfirmmatch.solutions` route. Must match `^[a-z][a-z0-9-]*$`. |
+| `project_name` | kebab-case string | — | Becomes the app/package name; with `deploy_target=cloudflare-workers` also the CF Worker name and the `{project_name}.propfirmmatch.solutions` route. Must match `^[a-z][a-z0-9-]*$`. |
 | `owner` | email string | — | Human, not a bot/service account. Required — no default. Lands in `CLAUDE.md`, `README.md`, and `.github/CODEOWNERS`. |
-| `data_source` | `postgres`, `bigquery`, `google-sheets`, `external-api-only` | `external-api-only` | Not every app owns a database — pick the one matching where the data actually lives. |
-| `auth` | `clerk`, `google-oauth`, `cloudflare-access`, `none` | `cloudflare-access` | `cloudflare-access` = zero app code, gate the route in the CF Zero Trust dashboard. Simplest default for internal tools. `none` = no sign-in at all, `protectedProcedure` becomes a no-op (`server/trpc.ts`) — a deliberate choice for something genuinely public, never an inferred default; the skill must say so explicitly before generating. |
+| `deploy_target` | `cloudflare-workers`, `vercel` | `cloudflare-workers` | `cloudflare-workers` = Vite SPA + tRPC API in one Worker (the original, most-exercised flavor). `vercel` = Next.js App Router, tRPC as a Route Handler/Vercel Function — narrower: `auth=cloudflare-access` and `enable_file_storage` are validator-blocked for it (see their rows), no Hyperdrive/R2 equivalent exists yet. Asked early since `auth`'s and `enable_file_storage`'s validators reference it. |
+| `data_source` | `postgres`, `bigquery`, `google-sheets`, `external-api-only` | `external-api-only` | Not every app owns a database — pick the one matching where the data actually lives. Fully supported under both `deploy_target`s. |
+| `auth` | `clerk`, `google-oauth`, `cloudflare-access`, `none` | `cloudflare-access` | `cloudflare-access` = zero app code, gate the route in the CF Zero Trust dashboard. Simplest default for internal tools. `none` = no sign-in at all, `protectedProcedure` becomes a no-op (`server/trpc.ts`) — a deliberate choice for something genuinely public, never an inferred default; the skill must say so explicitly before generating. Validator rejects `cloudflare-access` when `deploy_target=vercel` — CF Access gates traffic at Cloudflare's edge, which a Vercel-hosted domain doesn't pass through. |
 | `enable_i18n` | bool | `false` | |
 | `enable_testing` | bool | `true` | Adds Vitest scaffolding. |
-| `enable_file_storage` | bool | `false` | Adds an R2 client stub. |
+| `enable_file_storage` | bool | `false` | Adds an R2 client stub. Validator rejects `true` when `deploy_target=vercel` — R2 is a Cloudflare binding, no Vercel equivalent scaffolded. |
 | `enable_storybook` | bool | `false` | Adds Storybook (stories for `Button`/`Card`) for previewing/developing design-system components. |
 
 Always-on regardless of answers: Vite + React on Cloudflare Workers (via
@@ -177,7 +179,9 @@ resolve them like any merge conflict.
 
 | Answer | Files it gates |
 |---|---|
-| `data_source=postgres` | `drizzle.config.ts`, `lib/db/schema.ts`, `lib/db/client.ts`, `docker-compose.yml`, `hyperdrive` binding in `wrangler.jsonc` |
+| `deploy_target=cloudflare-workers` | `index.html`, `vite.config.ts`, `wrangler.jsonc`, `src/App.tsx`, `src/main.tsx`, `server/worker.ts`, `pnpm-workspace.yaml` (the vite-plus/vitest catalog) |
+| `deploy_target=vercel` | `next.config.ts`, `eslint.config.mjs`, `.prettierrc.json`, `app/layout.tsx`, `app/page.tsx`, `app/providers.tsx`, `app/api/trpc/[trpc]/route.ts` -- no `server/worker.ts` (the Route Handler is the entry point instead) |
+| `data_source=postgres` | `drizzle.config.ts`, `lib/db/schema.ts`, `lib/db/client.ts` (two different implementations gated by `deploy_target` too -- see below), `docker-compose.yml`; `deploy_target=cloudflare-workers` also gets the `hyperdrive` binding in `wrangler.jsonc`, `deploy_target=vercel` just reads `DATABASE_CONNECTION_STRING` directly |
 | `data_source=bigquery` | `lib/data/bigquery-client.ts` |
 | `data_source=google-sheets` | `lib/data/sheets-client.ts` |
 | `data_source=external-api-only` | none of the above — no owned datastore code |
@@ -189,6 +193,18 @@ resolve them like any merge conflict.
 | `enable_file_storage=true` | `lib/r2-client.ts` |
 | `enable_storybook=true` | `.storybook/main.ts`, `.storybook/preview.tsx`, `src/components/ui/button.stories.tsx`, `src/components/ui/card.stories.tsx` |
 | `enable_i18n=true` | adds `react-i18next`/`i18next` deps (no routing scaffolding wired yet — see [Known gaps](#known-gaps)) |
+
+**`lib/db/client.ts`'s two implementations are deliberately different, not
+inconsistent.** The `deploy_target=cloudflare-workers` version creates a
+fresh `Pool` per call (`max: 1`) -- a Workers isolate cannot carry a TCP
+socket across requests, so a module-level singleton there reproduces "the
+Worker's code had hung and would never generate a response" on the second
+request (this was a real, shipped bug — see the Known gaps entry below).
+The `deploy_target=vercel` version does the opposite on purpose: a
+module-level `Pool` singleton, because a warm Vercel Node.js function
+instance *does* persist between invocations and is meant to reuse
+connections across them. If you're "fixing" one to look like the other,
+stop and re-read this paragraph first.
 
 ---
 
@@ -221,10 +237,15 @@ resolve them like any merge conflict.
   bash scripts/test-matrix.sh
   ```
 
-  This generates every `data_source × auth × enable_i18n ×
-  enable_testing × enable_file_storage × enable_storybook` combination (256 total as of this
-  writing) into a temp dir and exits non-zero on any render error or
-  leftover unrendered `{% %}`/`{{ }}` filename. Last run: **256/256 passed**.
+  This generates every `deploy_target × data_source × auth × enable_i18n ×
+  enable_testing × enable_file_storage × enable_storybook` combination into
+  a temp dir and exits non-zero on any render error or leftover unrendered
+  `{% %}`/`{{ }}` filename. A handful of combinations are
+  validator-rejected by design (`auth=cloudflare-access` or
+  `enable_file_storage=true` with `deploy_target=vercel` — see the answers
+  table above) — the script recognizes copier's own validator message and
+  counts those as skipped, not failed. Last run: **TOTAL=512
+  SKIPPED(invalid combo)=160 RENDERED=352 FAIL=0**.
 
   This also runs automatically in CI (`.github/workflows/test-matrix.yml`)
   on every PR and push to `main` — a red check means a template change
@@ -332,6 +353,18 @@ the diff explicit before `copier update` runs.
 
 ## Known gaps
 
+- **A long `project_name` can make a fresh generate fail `format:check`
+  before the first commit.** `src/App.tsx`'s `<h1>` and `wrangler.jsonc`'s
+  `routes` line both embed `{{ project_name | ... }}` on an otherwise-short
+  line — for a long enough name, the rendered line crosses oxfmt's/
+  Prettier's width and needs wrapping, but the *correct* wrapped form
+  depends on the rendered length, so no single static template source can
+  be right for every `project_name`. Self-healing in practice: the
+  pre-commit hook (`vp check --fix`, wired by `prepare`) reformats staged
+  files before a commit lands, so a real `git commit` never hits this.
+  Only bites something that runs `format:check` against a freshly
+  generated, never-committed tree (e.g. `--no-verify`, or an automated
+  pipeline that skips the hook) with an unusually long name.
 - `scripts/test-matrix.sh` only verifies rendering, not that a generated
   app actually builds — no `pnpm install`/lint/type-check/build/test pass
   per combination. Several real bugs (missing React/CF Workers types, oxlint
@@ -341,6 +374,41 @@ the diff explicit before `copier update` runs.
   `pnpm install`/`build`/`type-check` on generated output, not by the
   matrix. A real build/lint/test smoke test per combination would close
   this for good — until then, treat the matrix as a floor, not a guarantee.
+- **`deploy_target=vercel` is newer and less exercised than
+  `cloudflare-workers`.** Render matrix (`scripts/test-matrix.sh`, 512
+  combinations including the 160 validator-blocked ones below) covers it.
+  `data_source=external-api-only` + `auth=clerk` was verified fully live:
+  `pnpm install`, lint/format:check/type-check/test/build, `next dev` boot,
+  a live `/api/trpc/health` (200) and `/api/trpc/echo` with no auth header
+  (401 — default-deny holds under the Route Handler too) request.
+  `data_source=postgres` + `auth=google-oauth` was verified through build
+  (install/lint/format:check/type-check/build) but **not** against a real
+  database — no Postgres was available in that session (Docker daemon
+  down, no local server running) to round-trip a live query the way the
+  `cloudflare-workers` flavor's equivalent was. Treat the postgres+vercel
+  data path as statically verified only until someone does that live pass.
+  Nothing has been exercised against a real `vercel deploy`, only local
+  `next build`/`next dev`. Two things are validator-blocked rather than
+  supported: `auth=cloudflare-access` (Cloudflare Access gates traffic at
+  Cloudflare's edge, which a Vercel-hosted domain doesn't pass through) and
+  `enable_file_storage` (R2 is a Cloudflare binding; no Vercel Blob/S3
+  equivalent has been scaffolded). `data_source=postgres` on Vercel
+  connects with a module-level `pg.Pool` singleton directly — correct for
+  a warm Node.js function instance (see the note in section 3 above), but
+  under real traffic many concurrent function instances each holding a
+  pool can exhaust a plain Postgres server's connection limit; a pooler
+  (Neon's serverless driver, PgBouncer, Supabase's pooler) belongs in
+  front of anything beyond light internal-tool usage, and this template
+  doesn't scaffold one.
+
+  Separately, and not a bug: the first `next dev`/`next build` appends a
+  `<!-- BEGIN:nextjs-agent-rules -->` block to `CLAUDE.md` warning AI
+  agents that Next 16 differs from their training data — this is Next's
+  own documented `generate-agent-files.js` behavior (disable via
+  `agentRules: false` in `next.config.ts` if it's ever unwanted), re-added
+  every dev/build run if removed. Don't mistake the resulting uncommitted
+  diff for template drift.
+  doesn't scaffold one.
 - No error-tracking integration (PostHog was deliberately dropped from this
   template's stack; no Sentry equivalent was added). Accepted for now —
   revisit if it becomes a real problem for a generated app.
